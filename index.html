@@ -1,354 +1,438 @@
-import React, { useState, useMemo, useEffect } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
-import { Search, Wallet, Heart, Info, TrendingUp, Globe, Navigation2, ArrowUpDown, ChevronDown, Filter } from 'lucide-react';
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Global Freedom Index - 全球退休/旅居幸福度分析仪</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Lucide Icons CDN -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700;900&display=swap');
+        
+        :root {
+            --bg-color: #050505;
+            --text-color: #ffffff;
+            --glass-bg: rgba(255, 255, 255, 0.03);
+            --glass-border: rgba(255, 255, 255, 0.1);
+        }
 
-// 货币配置与近似汇率 (以 1 USD 为基准)
-const CURRENCIES = [
-  { code: 'USD', symbol: '$', label: '美元', rate: 1 },
-  { code: 'EUR', symbol: '€', label: '欧元', rate: 0.92 },
-  { code: 'GBP', symbol: '£', label: '英镑', rate: 0.79 },
-  { code: 'JPY', symbol: '¥', label: '日元', rate: 150.5 },
-  { code: 'CNY', symbol: '¥', label: '人民币', rate: 7.2 },
-  { code: 'AUD', symbol: 'A$', label: '澳币', rate: 1.53 },
-];
+        .light-mode {
+            --bg-color: #f8fafc;
+            --text-color: #0f172a;
+            --glass-bg: #ffffff;
+            --glass-border: #e2e8f0;
+        }
 
-/**
- * 城市数据库扩充至 100 个
- * CLI: 生活成本指数 (100 = 纽约)
- * Health: 医疗保健指数 (0-100)
- * Base: 基础宜居/环境指数 (0-100)
- */
-const INITIAL_CITIES = [
-  // --- 亚洲 (Asia) 30 城市 ---
-  { id: 1, name: "清迈", country: "泰国", cli: 26, health: 70, base: 75, tag: "数字游民 慢生活 性价比 暖冬", flag: "🇹🇭" },
-  { id: 2, name: "东京", country: "日本", cli: 68, health: 92, base: 88, tag: "极致便利 治安 干净 文化", flag: "🇯🇵" },
-  { id: 3, name: "曼谷", country: "泰国", cli: 38, health: 75, base: 78, tag: "美食 购物 繁华 活力", flag: "🇹🇭" },
-  { id: 4, name: "台北", country: "中国台湾", cli: 52, health: 96, base: 84, tag: "顶级医疗 美食 便利 性价比", flag: "🇹🇼" },
-  { id: 5, name: "新加坡", country: "新加坡", cli: 105, health: 94, base: 85, tag: "极度安全 金融 避税 精英", flag: "🇸🇬" },
-  { id: 6, name: "首尔", country: "韩国", cli: 72, health: 94, base: 82, tag: "科技生活 24小时 潮流", flag: "🇰🇷" },
-  { id: 7, name: "巴厘岛", country: "印尼", cli: 24, health: 50, base: 72, tag: "冲浪 灵性 瑜伽 慢生活", flag: "🇮🇩" },
-  { id: 8, name: "吉隆坡", country: "马来西亚", cli: 32, health: 74, base: 74, tag: "超高性价比 现代 多元文化", flag: "🇲🇾" },
-  { id: 9, name: "岘港", country: "越南", cli: 23, health: 50, base: 68, tag: "海滨 慢生活 性价比 旅游", flag: "🇻🇳" },
-  { id: 10, name: "香港", country: "中国香港", cli: 98, health: 88, base: 80, tag: "金融中心 高效率 繁华 美食", flag: "🇭🇰" },
-  { id: 11, name: "上海", country: "中国", cli: 55, health: 85, base: 78, tag: "国际大都市 极度便利 商业", flag: "🇨🇳" },
-  { id: 12, name: "胡志明市", country: "越南", cli: 28, health: 55, base: 65, tag: "活力 创业 咖啡文化 街头", flag: "🇻🇳" },
-  { id: 13, name: "普吉岛", country: "泰国", cli: 34, health: 65, base: 76, tag: "海岛度假 退休首选 阳光", flag: "🇹🇭" },
-  { id: 14, name: "大阪", country: "日本", cli: 60, health: 90, base: 86, tag: "美食文化 热情 商业 便利", flag: "🇯🇵" },
-  { id: 15, name: "京都", country: "日本", cli: 62, health: 88, base: 92, tag: "传统文化 宁静 艺术 宜居", flag: "🇯🇵" },
-  { id: 16, name: "北京", country: "中国", cli: 58, health: 86, base: 75, tag: "政治文化中心 历史 资源", flag: "🇨🇳" },
-  { id: 17, name: "深圳", country: "中国", cli: 54, health: 82, base: 76, tag: "科技之都 硬件 创业 活力", flag: "🇨🇳" },
-  { id: 18, name: "成都", country: "中国", cli: 42, health: 80, base: 82, tag: "慢生活 美食 大熊猫 休闲", flag: "🇨🇳" },
-  { id: 19, name: "广州", country: "中国", cli: 50, health: 84, base: 79, tag: "美食之都 商贸 包容性", flag: "🇨🇳" },
-  { id: 20, name: "杭州", country: "中国", cli: 48, health: 85, base: 88, tag: "互联网 景观 宜居 雅致", flag: "🇨🇳" },
-  { id: 21, name: "福冈", country: "日本", cli: 55, health: 92, base: 89, tag: "宜居 创新 紧凑城市", flag: "🇯🇵" },
-  { id: 22, name: "河内", country: "越南", cli: 25, health: 48, base: 62, tag: "历史 文化 廉价 生活气", flag: "🇻🇳" },
-  { id: 23, name: "槟城", country: "马来西亚", cli: 30, health: 78, base: 80, tag: "世界遗产 美食 退休天堂", flag: "🇲🇾" },
-  { id: 24, name: "宿务", country: "菲律宾", cli: 32, health: 45, base: 66, tag: "海岛 英语环境 性价比", flag: "🇵🇭" },
-  { id: 25, name: "马尼拉", country: "菲律宾", cli: 40, health: 58, base: 60, tag: "商业 活力 社交", flag: "🇵🇭" },
-  { id: 26, name: "孟买", country: "印度", cli: 25, health: 42, base: 55, tag: "电影中心 活力 商业", flag: "🇮🇳" },
-  { id: 27, name: "德里", country: "印度", cli: 22, health: 45, base: 52, tag: "历史 政治 色彩", flag: "🇮🇳" },
-  { id: 28, name: "清莱", country: "泰国", cli: 22, health: 62, base: 74, tag: "极度性价比 宁静 艺术", flag: "🇹🇭" },
-  { id: 29, name: "乌布", country: "印尼", cli: 23, health: 48, base: 78, tag: "艺术 瑜伽 梯田 灵性", flag: "🇮🇩" },
-  { id: 30, name: "暹粒", country: "柬埔寨", cli: 28, health: 35, base: 65, tag: "古迹 旅游 廉价", flag: "🇰🇭" },
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            transition: background-color 0.5s ease, color 0.5s ease;
+            margin: 0;
+            min-height: 100vh;
+        }
 
-  // --- 欧洲 (Europe) 35 城市 ---
-  { id: 31, name: "苏黎世", country: "瑞士", cli: 122, health: 95, base: 92, tag: "极致安全 金融 高端 秩序", flag: "🇨🇭" },
-  { id: 32, name: "里斯本", country: "葡萄牙", cli: 49, health: 80, base: 85, tag: "低税天堂 数字游民 暖冬 冲浪", flag: "🇵🇹" },
-  { id: 33, name: "柏林", country: "德国", cli: 65, health: 90, base: 82, tag: "艺术氛围 自由 历史 亚文化", flag: "🇩🇪" },
-  { id: 34, name: "阿姆斯特丹", country: "荷兰", cli: 88, health: 88, base: 89, tag: "自行车友好 运河 艺术 自由", flag: "🇳🇱" },
-  { id: 35, name: "布拉格", country: "捷克", cli: 45, health: 84, base: 83, tag: "中欧明珠 童话 啤酒 历史", flag: "🇨🇿" },
-  { id: 36, name: "马德里", country: "西班牙", cli: 55, health: 93, base: 86, tag: "热情 阳光 医疗 夜生活", flag: "🇪🇸" },
-  { id: 37, name: "哥本哈根", country: "丹麦", cli: 98, health: 90, base: 94, tag: "高福利 极致设计 幸福感 设计", flag: "🇩🇰" },
-  { id: 38, name: "维也纳", country: "奥地利", cli: 68, health: 93, base: 95, tag: "艺术之都 最宜居 古典 音乐", flag: "🇦🇹" },
-  { id: 39, name: "伦敦", country: "英国", cli: 95, health: 82, base: 80, tag: "全球枢纽 文化 历史 金融", flag: "🇬🇧" },
-  { id: 40, name: "巴黎", country: "法国", cli: 92, health: 88, base: 81, tag: "浪漫 艺术 时尚 奢侈品", flag: "🇫🇷" },
-  { id: 41, name: "雅典", country: "希腊", cli: 48, health: 70, base: 74, tag: "历史底蕴 阳光 性价比 古迹", flag: "🇬🇷" },
-  { id: 42, name: "巴塞罗那", country: "西班牙", cli: 58, health: 91, base: 88, tag: "海滩 高迪 阳光 足球", flag: "🇪🇸" },
-  { id: 43, name: "雷克雅未克", country: "冰岛", cli: 105, health: 89, base: 90, tag: "自然奇观 纯净 安全 极光", flag: "🇮🇸" },
-  { id: 44, name: "波尔图", country: "葡萄牙", cli: 44, health: 78, base: 83, tag: "葡萄酒 美景 低生活成本", flag: "🇵🇹" },
-  { id: 45, name: "慕尼黑", country: "德国", cli: 82, health: 94, base: 90, tag: "工业 治安 啤酒节 稳定", flag: "🇩🇪" },
-  { id: 46, name: "斯德哥尔摩", country: "瑞典", cli: 78, health: 91, base: 90, tag: "极简生活 岛屿 设计 稳定", flag: "🇸🇪" },
-  { id: 47, name: "赫尔辛基", country: "芬兰", cli: 75, health: 92, base: 91, tag: "最幸福 极简 自然 教育", flag: "🇫🇮" },
-  { id: 48, name: "都柏林", country: "爱尔兰", cli: 90, health: 80, base: 82, tag: "科技公司 英语 酒吧文化", flag: "🇮🇪" },
-  { id: 49, name: "华沙", country: "波兰", cli: 40, health: 72, base: 78, tag: "经济增长 性价比 历史", flag: "🇵🇱" },
-  { id: 50, name: "布达佩斯", country: "匈牙利", cli: 38, health: 65, base: 80, tag: "温泉 建筑 夜生活 景观", flag: "🇭🇺" },
-  { id: 51, name: "塔林", country: "爱沙尼亚", cli: 52, health: 82, base: 84, tag: "数字游民 科技 古城 电子公民", flag: "🇪🇪" },
-  { id: 52, name: "瓦伦西亚", country: "西班牙", cli: 50, health: 90, base: 89, tag: "性价比 退休 阳光 宜居", flag: "🇪🇸" },
-  { id: 53, name: "波尔多", country: "法国", cli: 65, health: 88, base: 87, tag: "红酒 优雅 生活品质", flag: "🇫🇷" },
-  { id: 54, name: "罗马", country: "意大利", cli: 70, health: 80, base: 78, tag: "历史 艺术 美食 永恒", flag: "🇮🇹" },
-  { id: 55, name: "佛罗伦萨", country: "意大利", cli: 68, health: 82, base: 85, tag: "文艺复兴 艺术 紧凑", flag: "🇮🇹" },
-  { id: 56, name: "日内瓦", country: "瑞士", cli: 115, health: 95, base: 89, tag: "国际组织 治安 环境", flag: "🇨🇭" },
-  { id: 57, name: "米兰", country: "意大利", cli: 78, health: 88, base: 79, tag: "时尚 商业 设计", flag: "🇮🇹" },
-  { id: 58, name: "奥斯陆", country: "挪威", cli: 102, health: 92, base: 93, tag: "高福利 峡湾 极致环保", flag: "🇳🇴" },
-  { id: 59, name: "罗希姆诺", country: "希腊", cli: 42, health: 68, base: 75, tag: "地中海 海滨 退休 慢节奏", flag: "🇬🇷" },
-  { id: 60, name: "卢森堡市", country: "卢森堡", cli: 95, health: 94, base: 88, tag: "富裕 安全 金融", flag: "🇱🇺" },
-  { id: 61, name: "克拉科夫", country: "波兰", cli: 36, health: 70, base: 82, tag: "古城 文化 学生 廉价", flag: "🇵🇱" },
-  { id: 62, name: "布加勒斯特", country: "罗马尼亚", cli: 35, health: 62, base: 70, tag: "低成本 东欧风情 发展", flag: "🇷🇴" },
-  { id: 63, name: "尼科西亚", country: "塞浦路斯", cli: 45, health: 75, base: 78, tag: "低税 阳光 避税天堂", flag: "🇨🇾" },
-  { id: 64, name: "瓦莱塔", country: "马耳他", cli: 55, health: 88, base: 82, tag: "暖冬 海滨 英语 医疗", flag: "🇲🇹" },
-  { id: 65, name: "里加", country: "拉脱维亚", cli: 45, health: 70, base: 75, tag: "波罗的海 文化 宁静", flag: "🇱🇻" },
+        .glass {
+            background: var(--glass-bg);
+            backdrop-filter: blur(14px);
+            -webkit-backdrop-filter: blur(14px);
+            border: 1px solid var(--glass-border);
+        }
 
-  // --- 美洲 (Americas) 20 城市 ---
-  { id: 66, name: "温哥华", country: "加拿大", cli: 82, health: 85, base: 87, tag: "自然 移民首选 宜居 环境", flag: "🇨🇦" },
-  { id: 67, name: "纽约", country: "美国", cli: 100, health: 84, base: 75, tag: "世界中心 繁华 机遇 商业", flag: "🇺🇸" },
-  { id: 68, name: "麦德林", country: "哥伦比亚", cli: 22, health: 65, base: 68, tag: "永恒之春 数字游民 性价比", flag: "🇨🇴" },
-  { id: 69, name: "布宜诺斯艾利斯", country: "阿根廷", cli: 30, health: 72, base: 70, tag: "南美巴黎 文化 足球 性价比", flag: "🇦🇷" },
-  { id: 70, name: "墨西哥城", country: "墨西哥", cli: 32, health: 60, base: 74, tag: "美食 艺术 性价比 历史", flag: "🇲🇽" },
-  { id: 71, name: "多伦多", country: "加拿大", cli: 80, health: 83, base: 85, tag: "多元文化 现代 稳定 移民", flag: "🇨🇦" },
-  { id: 72, name: "奥斯汀", country: "美国", cli: 75, health: 78, base: 80, tag: "科技新贵 音乐 活力 德州", flag: "🇺🇸" },
-  { id: 73, name: "圣何塞", country: "哥斯达黎加", cli: 40, health: 75, base: 78, tag: "雨林 环保 慢生活 退休", flag: "🇨🇷" },
-  { id: 74, name: "利马", country: "秘鲁", cli: 30, health: 55, base: 68, tag: "顶级美食 海滨 性价比", flag: "🇵🇪" },
-  { id: 75, name: "圣地亚哥", country: "智利", cli: 45, health: 72, base: 76, tag: "南美最稳 现代 滑雪", flag: "🇨🇱" },
-  { id: 76, name: "里约热内卢", country: "巴西", cli: 38, health: 58, base: 70, tag: "嘉年华 海滩 激情", flag: "🇧🇷" },
-  { id: 77, name: "圣保罗", country: "巴西", cli: 42, health: 65, base: 65, tag: "商业中心 餐饮 活力", flag: "🇧🇷" },
-  { id: 78, name: "迈阿密", country: "美国", cli: 88, health: 80, base: 78, tag: "阳光 派对 海滩 加勒比", flag: "🇺🇸" },
-  { id: 79, name: "旧金山", country: "美国", cli: 102, health: 85, base: 80, tag: "科技 硅谷 景观 昂贵", flag: "🇺🇸" },
-  { id: 80, name: "洛杉矶", country: "美国", cli: 92, health: 82, base: 78, tag: "娱乐 好莱坞 阳光 海滨", flag: "🇺🇸" },
-  { id: 81, name: "西雅图", country: "美国", cli: 88, health: 84, base: 82, tag: "咖啡 科技 雨城 户外", flag: "🇺🇸" },
-  { id: 82, name: "蒙特利尔", country: "加拿大", cli: 68, health: 82, base: 88, tag: "双语 欧洲感 文化 节庆", flag: "🇨🇦" },
-  { id: 83, name: "坎昆", country: "墨西哥", cli: 35, health: 55, base: 72, tag: "度假 阳光 加勒比海", flag: "🇲🇽" },
-  { id: 84, name: "库斯科", country: "秘鲁", cli: 25, health: 45, base: 65, tag: "印加文化 历史 徒步 古镇", flag: "🇵🇪" },
-  { id: 85, name: "蒙特维多", country: "乌拉圭", cli: 55, health: 78, base: 82, tag: "南美最安全 稳定 海滨", flag: "🇺🇾" },
+        .progress-gradient-pp { background: linear-gradient(90deg, #6366f1, #a855f7); }
+        .progress-gradient-hp { background: linear-gradient(90deg, #10b981, #3b82f6); }
+        .progress-gradient-pp-high { background: linear-gradient(90deg, #059669, #34d399); }
 
-  // --- 大洋洲 (Oceania) 10 城市 ---
-  { id: 86, name: "悉尼", country: "澳大利亚", cli: 85, health: 88, base: 90, tag: "阳光 海滩 宜居 繁华", flag: "🇦🇺" },
-  { id: 87, name: "墨尔本", country: "澳大利亚", cli: 82, health: 89, base: 91, tag: "咖啡文化 艺术 体育 宜居", flag: "🇦🇺" },
-  { id: 88, name: "奥克兰", country: "新西兰", cli: 80, health: 86, base: 88, tag: "纯净 自然 户外 稳定", flag: "🇳🇿" },
-  { id: 89, name: "布里斯班", country: "澳大利亚", cli: 75, health: 85, base: 86, tag: "悠闲 阳光 昆士兰 性价比", flag: "🇦🇺" },
-  { id: 90, name: "珀斯", country: "澳大利亚", cli: 70, health: 86, base: 87, tag: "西澳 绝美海滩 矿业 宜居", flag: "🇦🇺" },
-  { id: 91, name: "阿德莱德", country: "澳大利亚", cli: 68, health: 88, base: 88, tag: "节庆 葡萄酒 慢节奏", flag: "🇦🇺" },
-  { id: 92, name: "黄金海岸", country: "澳大利亚", cli: 72, health: 84, base: 85, tag: "旅游 冲浪 阳光 乐园", flag: "🇦🇺" },
-  { id: 93, name: "惠灵顿", country: "新西兰", cli: 78, health: 88, base: 89, tag: "风城 文化 纯净 紧凑", flag: "🇳🇿" },
-  { id: 94, name: "基督城", country: "新西兰", cli: 70, health: 85, base: 84, tag: "花园之城 复兴 宁静", flag: "🇳🇿" },
-  { id: 95, name: "堪培拉", country: "澳大利亚", cli: 80, health: 92, base: 88, tag: "政治中心 规划 森林 治安", flag: "🇦🇺" },
+        /* 隐藏数字输入框箭头 */
+        input::-webkit-outer-spin-button,
+        input::-webkit-inner-spin-button {
+            -webkit-appearance: none;
+            margin: 0;
+        }
 
-  // --- 非洲与中东 (Africa & ME) 5 城市 ---
-  { id: 96, name: "开普敦", country: "南非", cli: 35, health: 68, base: 72, tag: "山海之间 美景 冒险 葡萄酒", flag: "🇿🇦" },
-  { id: 97, name: "迪拜", country: "阿联酋", cli: 75, health: 80, base: 78, tag: "未来感 奢华 免税 高端", flag: "🇦🇪" },
-  { id: 98, name: "马拉喀什", country: "摩洛哥", cli: 28, health: 50, base: 65, tag: "异域风情 多彩 历史 摩尔", flag: "🇲🇦" },
-  { id: 99, name: "阿布扎比", country: "阿联酋", cli: 72, health: 85, base: 80, tag: "高端 安全 艺术 稳定", flag: "🇦🇪" },
-  { id: 100, name: "特拉维夫", country: "以色列", cli: 92, health: 88, base: 82, tag: "科技 创业 海滩 不夜城", flag: "🇮🇱" },
-];
+        .card-enter {
+            animation: fadeInUp 0.5s ease forwards;
+            opacity: 0;
+        }
 
-const App = () => {
-  const [income, setIncome] = useState(0);
-  const [currency, setCurrency] = useState(CURRENCIES[0]);
-  const [searchTerm, setSearchTerm] = useState("");
-  const [isDarkMode, setIsDarkMode] = useState(true);
-  const [sortBy, setSortBy] = useState("hpScore");
+        @keyframes fadeInUp {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
 
-  // 综合计算与多维搜索过滤
-  const processedData = useMemo(() => {
-    const usdEquivalent = income / currency.rate;
+        /* 选中的按钮样式 */
+        .btn-active {
+            background-color: #4f46e5;
+            color: white !important;
+        }
+    </style>
+</head>
+<body class="dark-mode">
+    <!-- 背景装饰 -->
+    <div class="fixed inset-0 overflow-hidden pointer-events-none">
+        <div class="absolute -top-[10%] -left-[10%] w-[50%] h-[50%] rounded-full blur-[140px] opacity-20 bg-indigo-600"></div>
+        <div class="absolute top-[50%] -right-[10%] w-[40%] h-[60%] rounded-full blur-[140px] opacity-10 bg-emerald-500"></div>
+    </div>
 
-    return INITIAL_CITIES.map(city => {
-      // PP Score: 基于 100k 美元基准的购买力倍率
-      const ppScore = income === 0 ? 0 : Math.round(100 * (100 / city.cli) * (usdEquivalent / 100000));
-      // Happiness Score: 权重分配 60/20/20
-      const hpScore = Math.round((city.base * 0.6) + (Math.min(100, ppScore * 0.5) * 0.2) + (city.health * 0.2));
-      return { ...city, ppScore, hpScore };
-    })
-    .filter(city => {
-      const search = searchTerm.toLowerCase();
-      // 深度搜索：城市名、国家名、标签
-      return city.name.toLowerCase().includes(search) || 
-             city.country.toLowerCase().includes(search) || 
-             city.tag.toLowerCase().includes(search);
-    })
-    .sort((a, b) => b[sortBy] - a[sortBy]);
-  }, [income, currency, searchTerm, sortBy]);
-
-  return (
-    <div className={`min-h-screen transition-colors duration-500 ${isDarkMode ? 'bg-[#050505] text-white' : 'bg-slate-50 text-slate-900'} font-sans p-4 md:p-12`}>
-      {/* Background Decor */}
-      <div className="fixed inset-0 overflow-hidden pointer-events-none">
-        <div className="absolute -top-[10%] -left-[10%] w-[50%] h-[50%] rounded-full blur-[140px] opacity-20 bg-indigo-600 animate-pulse"></div>
-        <div className="absolute top-[50%] -right-[10%] w-[40%] h-[60%] rounded-full blur-[140px] opacity-10 bg-emerald-500"></div>
-      </div>
-
-      <div className="max-w-7xl mx-auto relative z-10">
-        {/* Navigation & Controls */}
-        <header className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-10 mb-16">
-          <div className="space-y-2">
-            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="flex items-center gap-2 text-indigo-500 font-bold">
-              <Globe size={18} />
-              <span className="uppercase text-[10px] tracking-[0.4em]">Global Intelligence Platform</span>
-            </motion.div>
-            <h1 className="text-5xl md:text-7xl font-black tracking-tighter">
-              World <span className="text-indigo-500">Scale</span>
-            </h1>
-            <p className="opacity-40 text-sm font-medium">已集成 100 个全球目的地实时数据模型</p>
-          </div>
-
-          <motion.div 
-            initial={{ scale: 0.95, opacity: 0 }} 
-            animate={{ scale: 1, opacity: 1 }}
-            className={`w-full lg:w-auto p-6 rounded-[35px] border ${isDarkMode ? 'bg-white/5 border-white/10' : 'bg-white border-slate-200 shadow-2xl shadow-indigo-500/10'}`}
-          >
-            <div className="flex flex-col md:flex-row items-center gap-6">
-              <div className="flex flex-col">
-                <span className="text-[10px] font-black uppercase text-gray-500 mb-2 tracking-widest">预算配置 / Budget</span>
-                <div className="flex items-center gap-4">
-                  <div className="relative">
-                    <select 
-                      value={currency.code}
-                      onChange={(e) => setCurrency(CURRENCIES.find(c => c.code === e.target.value))}
-                      className={`appearance-none bg-transparent pl-2 pr-8 py-1 text-xl font-bold border-b-2 border-indigo-500/40 outline-none cursor-pointer ${isDarkMode ? '[&_option]:bg-zinc-900' : '[&_option]:bg-white'}`}
-                    >
-                      {CURRENCIES.map(c => <option key={c.code} value={c.code}>{c.code}</option>)}
-                    </select>
-                    <ChevronDown size={14} className="absolute right-2 top-1/2 -translate-y-1/2 opacity-30 pointer-events-none" />
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <span className="text-3xl font-light opacity-20">{currency.symbol}</span>
-                    <input 
-                      type="number" 
-                      placeholder="0"
-                      value={income === 0 ? "" : income}
-                      onChange={(e) => setIncome(Number(e.target.value))}
-                      className="bg-transparent text-4xl font-bold outline-none w-48 border-b-2 border-white/5 focus:border-indigo-500/50 transition-all"
-                    />
-                  </div>
+    <div class="max-w-7xl mx-auto relative z-10 p-4 md:p-12">
+        <!-- 导航与控制 -->
+        <header class="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-10 mb-16">
+            <div class="space-y-2">
+                <div class="flex items-center gap-2 text-indigo-500 font-bold">
+                    <i data-lucide="globe" size="18"></i>
+                    <span class="uppercase text-[10px] tracking-[0.4em]">Global Intelligence Platform</span>
                 </div>
-              </div>
-              <button 
-                onClick={() => setIsDarkMode(!isDarkMode)}
-                className={`w-14 h-14 rounded-full flex items-center justify-center ${isDarkMode ? 'bg-white/10 hover:bg-white/20' : 'bg-slate-100 hover:bg-slate-200'} transition-all text-2xl`}
-              >
-                {isDarkMode ? "🌙" : "☀️"}
-              </button>
+                <h1 class="text-5xl md:text-7xl font-black tracking-tighter">
+                    World <span class="text-indigo-500">Scale</span>
+                </h1>
+                <p class="opacity-40 text-sm font-medium">已集成 100 个全球目的地实时数据模型</p>
             </div>
-          </motion.div>
+
+            <div class="glass w-full lg:w-auto p-6 rounded-[35px] border shadow-2xl transition-all">
+                <div class="flex flex-col md:flex-row items-center gap-6">
+                    <div class="flex flex-col">
+                        <span class="text-[10px] font-black uppercase text-gray-500 mb-2 tracking-widest">预算配置 / Budget</span>
+                        <div class="flex items-center gap-4">
+                            <div class="relative">
+                                <select id="currency-select" class="appearance-none bg-transparent pl-2 pr-8 py-1 text-xl font-bold border-b-2 border-indigo-500/40 outline-none cursor-pointer">
+                                    <option value="USD">USD</option>
+                                    <option value="EUR">EUR</option>
+                                    <option value="GBP">GBP</option>
+                                    <option value="JPY">JPY</option>
+                                    <option value="CNY">CNY</option>
+                                    <option value="AUD">AUD</option>
+                                </select>
+                                <i data-lucide="chevron-down" class="absolute right-2 top-1/2 -translate-y-1/2 opacity-30 pointer-events-none w-4 h-4"></i>
+                            </div>
+                            <div class="flex items-center gap-2">
+                                <span id="currency-symbol" class="text-3xl font-light opacity-20">$</span>
+                                <input id="income-input" type="number" placeholder="输入金额" class="bg-transparent text-4xl font-bold outline-none w-48 border-b-2 border-white/5 focus:border-indigo-500/50 transition-all">
+                            </div>
+                        </div>
+                    </div>
+                    <button id="theme-toggle" class="w-14 h-14 rounded-full flex items-center justify-center bg-white/10 hover:bg-white/20 transition-all text-2xl">
+                        🌙
+                    </button>
+                </div>
+            </div>
         </header>
 
-        {/* Dynamic Search & Filter Bar */}
-        <div className="flex flex-col md:flex-row gap-4 mb-12">
-          <div className={`flex-1 group flex items-center gap-4 px-8 py-5 rounded-[25px] border transition-all ${isDarkMode ? 'bg-white/5 border-white/10 focus-within:border-indigo-500/50' : 'bg-white border-slate-200 shadow-sm shadow-slate-200/50'}`}>
-            <Search className="text-gray-500 group-focus-within:text-indigo-500 transition-colors" size={22} />
-            <input 
-              placeholder="搜索城市、国家、标签 (如: '数字游民', '低税', '医疗')..."
-              className="bg-transparent outline-none w-full text-lg font-medium placeholder:opacity-20"
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-            />
-          </div>
+        <!-- 搜索与排序控制 -->
+        <div class="flex flex-col md:flex-row gap-4 mb-12">
+            <div class="flex-1 flex items-center gap-4 px-8 py-5 rounded-[25px] border glass focus-within:border-indigo-500/50 transition-all">
+                <i data-lucide="search" class="text-gray-500" size="22"></i>
+                <input id="search-input" placeholder="搜索城市、国家、标签 (如: '数字游民', '低税', '医疗')..." class="bg-transparent outline-none w-full text-lg font-medium placeholder:opacity-20">
+            </div>
 
-          <div className={`p-1.5 flex gap-1 rounded-[25px] border ${isDarkMode ? 'bg-white/5 border-white/10' : 'bg-white border-slate-200'}`}>
-            <button 
-              onClick={() => setSortBy('hpScore')}
-              className={`px-8 py-3 rounded-[18px] text-xs font-black uppercase tracking-widest relative transition-all ${sortBy === 'hpScore' ? 'text-white' : 'text-gray-500 hover:text-gray-400'}`}
-            >
-              {sortBy === 'hpScore' && <motion.div layoutId="activeNav" className="absolute inset-0 bg-indigo-600 rounded-[18px] -z-10" />}
-              <div className="flex items-center gap-2"><Heart size={14}/> 幸福指数</div>
-            </button>
-            <button 
-              onClick={() => setSortBy('ppScore')}
-              className={`px-8 py-3 rounded-[18px] text-xs font-black uppercase tracking-widest relative transition-all ${sortBy === 'ppScore' ? 'text-white' : 'text-gray-500 hover:text-gray-400'}`}
-            >
-              {sortBy === 'ppScore' && <motion.div layoutId="activeNav" className="absolute inset-0 bg-indigo-600 rounded-[18px] -z-10" />}
-              <div className="flex items-center gap-2"><Wallet size={14}/> 消费能力</div>
-            </button>
-          </div>
+            <div class="p-1.5 flex gap-1 rounded-[25px] border glass">
+                <button id="sort-hp" class="px-8 py-3 rounded-[18px] text-xs font-black uppercase tracking-widest transition-all btn-active">
+                    <div class="flex items-center gap-2"><i data-lucide="heart" size="14"></i> 幸福指数</div>
+                </button>
+                <button id="sort-pp" class="px-8 py-3 rounded-[18px] text-xs font-black uppercase tracking-widest transition-all text-gray-500">
+                    <div class="flex items-center gap-2"><i data-lucide="wallet" size="14"></i> 消费能力</div>
+                </button>
+            </div>
         </div>
 
-        {/* Huge Result Grid */}
-        <motion.div layout className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-          <AnimatePresence mode="popLayout">
-            {processedData.map((city, index) => (
-              <motion.div
-                key={city.id}
-                layout
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, scale: 0.9 }}
-                transition={{ 
-                  delay: (index % 12) * 0.03,
-                  layout: { duration: 0.4, type: "spring", stiffness: 200, damping: 30 }
-                }}
-                className={`group relative p-8 rounded-[45px] border transition-all duration-500 ${isDarkMode ? 'bg-white/[0.03] border-white/10 hover:bg-white/[0.08] hover:border-white/30' : 'bg-white border-slate-200 hover:shadow-2xl hover:shadow-slate-200 shadow-sm shadow-slate-100'}`}
-              >
-                {/* Visual Accent */}
-                <div className="absolute top-8 right-8 text-7xl opacity-5 group-hover:opacity-10 group-hover:-rotate-12 transition-all pointer-events-none select-none">
-                  {city.flag}
-                </div>
+        <!-- 城市网格 -->
+        <div id="city-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+            <!-- 动态生成卡片 -->
+        </div>
 
-                <div className="relative">
-                  <div className="flex flex-wrap gap-2 mb-6">
-                    {city.tag.split(" ").slice(0, 2).map(t => (
-                      <span key={t} className={`px-2.5 py-1 rounded-full text-[9px] font-black uppercase tracking-tighter ${isDarkMode ? 'bg-white/10 text-gray-400' : 'bg-slate-100 text-slate-500'}`}>
-                        #{t}
-                      </span>
-                    ))}
-                  </div>
-
-                  <h3 className="text-2xl font-black mb-1 leading-tight">{city.name}</h3>
-                  <p className="text-indigo-500 text-xs font-bold uppercase tracking-[0.2em] mb-8">{city.country}</p>
-
-                  <div className="space-y-6">
-                    <div>
-                      <div className="flex justify-between text-[10px] font-black uppercase opacity-40 mb-2 tracking-widest">
-                        <span>Purchasing Power</span>
-                        <span className={city.ppScore > 100 ? "text-emerald-500" : ""}>{city.ppScore}%</span>
-                      </div>
-                      <div className={`h-1 w-full rounded-full ${isDarkMode ? 'bg-white/5' : 'bg-slate-100'}`}>
-                        <motion.div 
-                          animate={{ width: `${Math.min(100, city.ppScore)}%` }}
-                          className={`h-full rounded-full bg-gradient-to-r ${city.ppScore > 100 ? 'from-emerald-500 to-teal-400' : 'from-indigo-600 to-indigo-400'}`}
-                        />
-                      </div>
-                    </div>
-
-                    <div>
-                      <div className="flex justify-between text-[10px] font-black uppercase opacity-40 mb-2 tracking-widest">
-                        <span>Happiness Index</span>
-                        <span className="text-emerald-500">{city.hpScore}/100</span>
-                      </div>
-                      <div className={`h-1 w-full rounded-full ${isDarkMode ? 'bg-white/5' : 'bg-slate-100'}`}>
-                        <motion.div 
-                          animate={{ width: `${city.hpScore}%` }}
-                          className="h-full rounded-full bg-gradient-to-r from-emerald-500 to-teal-300"
-                        />
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className={`mt-8 pt-6 border-t ${isDarkMode ? 'border-white/5' : 'border-slate-100'} flex items-center justify-between`}>
-                    <div className="flex gap-4">
-                      <div className="text-center">
-                        <p className="text-[8px] font-black opacity-30 uppercase">Health</p>
-                        <p className="text-xs font-bold">{city.health}</p>
-                      </div>
-                      <div className="text-center">
-                        <p className="text-[8px] font-black opacity-30 uppercase">CLI Index</p>
-                        <p className="text-xs font-bold">{city.cli}</p>
-                      </div>
-                    </div>
-                    <motion.button whileTap={{ scale: 0.9 }} className={`p-2 rounded-2xl ${isDarkMode ? 'bg-white/5 hover:bg-white/10' : 'bg-slate-100 hover:bg-slate-200 shadow-sm'} transition-colors`}>
-                      <Navigation2 size={16} className="text-indigo-500" />
-                    </motion.button>
-                  </div>
-                </div>
-              </motion.div>
-            ))}
-          </AnimatePresence>
-        </motion.div>
-
-        {processedData.length === 0 && (
-          <div className="text-center py-40 opacity-20 italic text-xl font-light">
+        <div id="no-results" class="hidden text-center py-40 opacity-20 italic text-xl font-light">
             没有找到匹配的城市，换个关键词试试？ (例如: "暖冬", "冲浪", "科技")
-          </div>
-        )}
+        </div>
 
-        <footer className="mt-32 pb-12 border-t border-white/5 pt-12 flex flex-col md:flex-row justify-between items-center gap-6 opacity-30 text-[10px] font-bold uppercase tracking-[0.3em]">
-          <p>© 2024 Global Scale Index v2.5</p>
-          <div className="flex gap-8">
-            <span>数据源: Numbeo Global Database</span>
-            <span>覆盖城市: 100 全球节点</span>
-          </div>
+        <footer class="mt-32 pb-12 border-t border-white/5 pt-12 flex flex-col md:flex-row justify-between items-center gap-6 opacity-30 text-[10px] font-bold uppercase tracking-[0.3em]">
+            <p>© 2024 Global Scale Index v2.5</p>
+            <div class="flex gap-8">
+                <span>数据源: Numbeo Global Database</span>
+                <span>覆盖城市: 100 全球节点</span>
+            </div>
         </footer>
-      </div>
     </div>
-  );
-};
 
-export default App;
+    <script>
+        // 1. 城市数据库
+        const INITIAL_CITIES = [
+          { id: 1, name: "清迈", country: "泰国", cli: 26, health: 70, base: 75, tag: "数字游民 慢生活 性价比 暖冬", flag: "🇹🇭" },
+          { id: 2, name: "东京", country: "日本", cli: 68, health: 92, base: 88, tag: "极致便利 治安 干净 文化", flag: "🇯🇵" },
+          { id: 3, name: "曼谷", country: "泰国", cli: 38, health: 75, base: 78, tag: "美食 购物 繁华 活力", flag: "🇹🇭" },
+          { id: 4, name: "台北", country: "中国台湾", cli: 52, health: 96, base: 84, tag: "顶级医疗 美食 便利 性价比", flag: "🇹🇼" },
+          { id: 5, name: "新加坡", country: "新加坡", cli: 105, health: 94, base: 85, tag: "极度安全 金融 避税 精英", flag: "🇸🇬" },
+          { id: 6, name: "首尔", country: "韩国", cli: 72, health: 94, base: 82, tag: "科技生活 24小时 潮流", flag: "🇰🇷" },
+          { id: 7, name: "巴厘岛", country: "印尼", cli: 24, health: 50, base: 72, tag: "冲浪 灵性 瑜伽 慢生活", flag: "🇮🇩" },
+          { id: 8, name: "吉隆坡", country: "马来西亚", cli: 32, health: 74, base: 74, tag: "超高性价比 现代 多元文化", flag: "🇲🇾" },
+          { id: 9, name: "岘港", country: "越南", cli: 23, health: 50, base: 68, tag: "海滨 慢生活 性价比 旅游", flag: "🇻🇳" },
+          { id: 10, name: "香港", country: "中国香港", cli: 98, health: 88, base: 80, tag: "金融中心 高效率 繁华 美食", flag: "🇭🇰" },
+          { id: 11, name: "上海", country: "中国", cli: 55, health: 85, base: 78, tag: "国际大都市 极度便利 商业", flag: "🇨🇳" },
+          { id: 12, name: "胡志明市", country: "越南", cli: 28, health: 55, base: 65, tag: "活力 创业 咖啡文化 街头", flag: "🇻🇳" },
+          { id: 13, name: "普吉岛", country: "泰国", cli: 34, health: 65, base: 76, tag: "海岛度假 退休首选 阳光", flag: "🇹🇭" },
+          { id: 14, name: "大阪", country: "日本", cli: 60, health: 90, base: 86, tag: "美食文化 热情 商业 便利", flag: "🇯🇵" },
+          { id: 15, name: "京都", country: "日本", cli: 62, health: 88, base: 92, tag: "传统文化 宁静 艺术 宜居", flag: "🇯🇵" },
+          { id: 16, name: "北京", country: "中国", cli: 58, health: 86, base: 75, tag: "政治文化中心 历史 资源", flag: "🇨🇳" },
+          { id: 17, name: "深圳", country: "中国", cli: 54, health: 82, base: 76, tag: "科技之都 硬件 创业 活力", flag: "🇨🇳" },
+          { id: 18, name: "成都", country: "中国", cli: 42, health: 80, base: 82, tag: "慢生活 美食 大熊猫 休闲", flag: "🇨🇳" },
+          { id: 19, name: "广州", country: "中国", cli: 50, health: 84, base: 79, tag: "美食之都 商贸 包容性", flag: "🇨🇳" },
+          { id: 20, name: "杭州", country: "中国", cli: 48, health: 85, base: 88, tag: "互联网 景观 宜居 雅致", flag: "🇨🇳" },
+          { id: 21, name: "福冈", country: "日本", cli: 55, health: 92, base: 89, tag: "宜居 创新 紧凑城市", flag: "🇯🇵" },
+          { id: 22, name: "河内", country: "越南", cli: 25, health: 48, base: 62, tag: "历史 文化 廉价 生活气", flag: "🇻🇳" },
+          { id: 23, name: "槟城", country: "马来西亚", cli: 30, health: 78, base: 80, tag: "世界遗产 美食 退休天堂", flag: "🇲🇾" },
+          { id: 24, name: "宿务", country: "菲律宾", cli: 32, health: 45, base: 66, tag: "海岛 英语环境 性价比", flag: "🇵🇭" },
+          { id: 25, name: "马尼拉", country: "菲律宾", cli: 40, health: 58, base: 60, tag: "商业 活力 社交", flag: "🇵🇭" },
+          { id: 26, name: "孟买", country: "印度", cli: 25, health: 42, base: 55, tag: "电影中心 活力 商业", flag: "🇮🇳" },
+          { id: 27, name: "德里", country: "印度", cli: 22, health: 45, base: 52, tag: "历史 政治 色彩", flag: "🇮🇳" },
+          { id: 28, name: "清莱", country: "泰国", cli: 22, health: 62, base: 74, tag: "极度性价比 宁静 艺术", flag: "🇹🇭" },
+          { id: 29, name: "乌布", country: "印尼", cli: 23, health: 48, base: 78, tag: "艺术 瑜伽 梯田 灵性", flag: "🇮🇩" },
+          { id: 30, name: "暹粒", country: "柬埔寨", cli: 28, health: 35, base: 65, tag: "古迹 旅游 廉价", flag: "🇰🇭" },
+          { id: 31, name: "苏黎世", country: "瑞士", cli: 122, health: 95, base: 92, tag: "极致安全 金融 高端 秩序", flag: "🇨🇭" },
+          { id: 32, name: "里斯本", country: "葡萄牙", cli: 49, health: 80, base: 85, tag: "低税天堂 数字游民 暖冬 冲浪", flag: "🇵🇹" },
+          { id: 33, name: "柏林", country: "德国", cli: 65, health: 90, base: 82, tag: "艺术氛围 自由 历史 亚文化", flag: "🇩🇪" },
+          { id: 34, name: "阿姆斯特丹", country: "荷兰", cli: 88, health: 88, base: 89, tag: "自行车友好 运河 艺术 自由", flag: "🇳🇱" },
+          { id: 35, name: "布拉格", country: "捷克", cli: 45, health: 84, base: 83, tag: "中欧明珠 童话 啤酒 历史", flag: "🇨🇿" },
+          { id: 36, name: "马德里", country: "西班牙", cli: 55, health: 93, base: 86, tag: "热情 阳光 医疗 夜生活", flag: "🇪🇸" },
+          { id: 37, name: "哥本哈根", country: "丹麦", cli: 98, health: 90, base: 94, tag: "高福利 极致设计 幸福感 设计", flag: "🇩🇰" },
+          { id: 38, name: "维也纳", country: "奥地利", cli: 68, health: 93, base: 95, tag: "艺术之都 最宜居 古典 音乐", flag: "🇦🇹" },
+          { id: 39, name: "伦敦", country: "英国", cli: 95, health: 82, base: 80, tag: "全球枢纽 文化 历史 金融", flag: "🇬🇧" },
+          { id: 40, name: "巴黎", country: "法国", cli: 92, health: 88, base: 81, tag: "浪漫 艺术 时尚 奢侈品", flag: "🇫🇷" },
+          { id: 41, name: "雅典", country: "希腊", cli: 48, health: 70, base: 74, tag: "历史底蕴 阳光 性价比 古迹", flag: "🇬🇷" },
+          { id: 42, name: "巴塞罗那", country: "西班牙", cli: 58, health: 91, base: 88, tag: "海滩 高迪 阳光 足球", flag: "🇪🇸" },
+          { id: 43, name: "雷克雅未克", country: "冰岛", cli: 105, health: 89, base: 90, tag: "自然奇观 纯净 安全 极光", flag: "🇮🇸" },
+          { id: 44, name: "波尔图", country: "葡萄牙", cli: 44, health: 78, base: 83, tag: "葡萄酒 美景 低生活成本", flag: "🇵🇹" },
+          { id: 45, name: "慕尼黑", country: "德国", cli: 82, health: 94, base: 90, tag: "工业 治安 啤酒节 稳定", flag: "🇩🇪" },
+          { id: 46, name: "斯德哥尔摩", country: "瑞典", cli: 78, health: 91, base: 90, tag: "极简生活 岛屿 设计 稳定", flag: "🇸🇪" },
+          { id: 47, name: "赫尔辛基", country: "芬兰", cli: 75, health: 92, base: 91, tag: "最幸福 极简 自然 教育", flag: "🇫🇮" },
+          { id: 48, name: "都柏林", country: "爱尔兰", cli: 90, health: 80, base: 82, tag: "科技公司 英语 酒吧文化", flag: "🇮🇪" },
+          { id: 49, name: "华沙", country: "波兰", cli: 40, health: 72, base: 78, tag: "经济增长 性价比 历史", flag: "🇵🇱" },
+          { id: 50, name: "布达佩斯", country: "匈牙利", cli: 38, health: 65, base: 80, tag: "温泉 建筑 夜生活 景观", flag: "🇭🇺" },
+          { id: 51, name: "塔林", country: "爱沙尼亚", cli: 52, health: 82, base: 84, tag: "数字游民 科技 古城 电子公民", flag: "🇪🇪" },
+          { id: 52, name: "瓦伦西亚", country: "西班牙", cli: 50, health: 90, base: 89, tag: "性价比 退休 阳光 宜居", flag: "🇪🇸" },
+          { id: 53, name: "波尔多", country: "法国", cli: 65, health: 88, base: 87, tag: "红酒 优雅 生活品质", flag: "🇫🇷" },
+          { id: 54, name: "罗马", country: "意大利", cli: 70, health: 80, base: 78, tag: "历史 艺术 美食 永恒", flag: "🇮🇹" },
+          { id: 55, name: "佛罗伦萨", country: "意大利", cli: 68, health: 82, base: 85, tag: "文艺复兴 艺术 紧凑", flag: "🇮🇹" },
+          { id: 56, name: "日内瓦", country: "瑞士", cli: 115, health: 95, base: 89, tag: "国际组织 治安 环境", flag: "🇨🇭" },
+          { id: 57, name: "米兰", country: "意大利", cli: 78, health: 88, base: 79, tag: "时尚 商业 设计", flag: "🇮🇹" },
+          { id: 58, name: "奥斯陆", country: "挪威", cli: 102, health: 92, base: 93, tag: "高福利 峡湾 极致环保", flag: "🇳🇴" },
+          { id: 59, name: "罗希姆诺", country: "希腊", cli: 42, health: 68, base: 75, tag: "地中海 海滨 退休 慢节奏", flag: "🇬🇷" },
+          { id: 60, name: "卢森堡市", country: "卢森堡", cli: 95, health: 94, base: 88, tag: "富裕 安全 金融", flag: "🇱🇺" },
+          { id: 61, name: "克拉科夫", country: "波兰", cli: 36, health: 70, base: 82, tag: "古城 文化 学生 廉价", flag: "🇵🇱" },
+          { id: 62, name: "布加勒斯特", country: "罗马尼亚", cli: 35, health: 62, base: 70, tag: "低成本 东欧风情 发展", flag: "🇷🇴" },
+          { id: 63, name: "尼科西亚", country: "塞浦路斯", cli: 45, health: 75, base: 78, tag: "低税 阳光 避税天堂", flag: "🇨🇾" },
+          { id: 64, name: "瓦莱塔", country: "马耳他", cli: 55, health: 88, base: 82, tag: "暖冬 海滨 英语 医疗", flag: "🇲🇹" },
+          { id: 65, name: "里加", country: "拉脱维亚", cli: 45, health: 70, base: 75, tag: "波罗的海 文化 宁静", flag: "🇱🇻" },
+          { id: 66, name: "温哥华", country: "加拿大", cli: 82, health: 85, base: 87, tag: "自然 移民首选 宜居 环境", flag: "🇨🇦" },
+          { id: 67, name: "纽约", country: "美国", cli: 100, health: 84, base: 75, tag: "世界中心 繁华 机遇 商业", flag: "🇺🇸" },
+          { id: 68, name: "麦德林", country: "哥伦比亚", cli: 22, health: 65, base: 68, tag: "永恒之春 数字游民 性价比", flag: "🇨🇴" },
+          { id: 69, name: "布宜诺斯艾利斯", country: "阿根廷", cli: 30, health: 72, base: 70, tag: "南美巴黎 文化 足球 性价比", flag: "🇦🇷" },
+          { id: 70, name: "墨西哥城", country: "墨西哥", cli: 32, health: 60, base: 74, tag: "美食 艺术 性价比 历史", flag: "🇲🇽" },
+          { id: 71, name: "多伦多", country: "加拿大", cli: 80, health: 83, base: 85, tag: "多元文化 现代 稳定 移民", flag: "🇨🇦" },
+          { id: 72, name: "奥斯汀", country: "美国", cli: 75, health: 78, base: 80, tag: "科技新贵 音乐 活力 德州", flag: "🇺🇸" },
+          { id: 73, name: "圣何塞", country: "哥斯达黎加", cli: 40, health: 75, base: 78, tag: "雨林 环保 慢生活 退休", flag: "🇨🇷" },
+          { id: 74, name: "利马", country: "秘鲁", cli: 30, health: 55, base: 68, tag: "顶级美食 海滨 性价比", flag: "🇵🇪" },
+          { id: 75, name: "圣地亚哥", country: "智利", cli: 45, health: 72, base: 76, tag: "南美最稳 现代 滑雪", flag: "🇨🇱" },
+          { id: 76, name: "里约热内卢", country: "巴西", cli: 38, health: 58, base: 70, tag: "嘉年华 海滩 激情", flag: "🇧🇷" },
+          { id: 77, name: "圣保罗", country: "巴西", cli: 42, health: 65, base: 65, tag: "商业中心 餐饮 活力", flag: "🇧🇷" },
+          { id: 78, name: "迈阿密", country: "美国", cli: 88, health: 80, base: 78, tag: "阳光 派对 海滩 加勒比", flag: "🇺🇸" },
+          { id: 79, name: "旧金山", country: "美国", cli: 102, health: 85, base: 80, tag: "科技 硅谷 景观 昂贵", flag: "🇺🇸" },
+          { id: 80, name: "洛杉矶", country: "美国", cli: 92, health: 82, base: 78, tag: "娱乐 好莱坞 阳光 海滨", flag: "🇺🇸" },
+          { id: 81, name: "西雅图", country: "美国", cli: 88, health: 84, base: 82, tag: "咖啡 科技 雨城 户外", flag: "🇺🇸" },
+          { id: 82, name: "蒙特利尔", country: "加拿大", cli: 68, health: 82, base: 88, tag: "双语 欧洲感 文化 节庆", flag: "🇨🇦" },
+          { id: 83, name: "坎昆", country: "墨西哥", cli: 35, health: 55, base: 72, tag: "度假 阳光 加勒比海", flag: "🇲🇽" },
+          { id: 84, name: "库斯科", country: "秘鲁", cli: 25, health: 45, base: 65, tag: "印加文化 历史 徒步 古镇", flag: "🇵🇪" },
+          { id: 85, name: "蒙特维多", country: "乌拉圭", cli: 55, health: 78, base: 82, tag: "南美最安全 稳定 海滨", flag: "🇺🇾" },
+          { id: 86, name: "悉尼", country: "澳大利亚", cli: 85, health: 88, base: 90, tag: "阳光 海滩 宜居 繁华", flag: "🇦🇺" },
+          { id: 87, name: "墨尔本", country: "澳大利亚", cli: 82, health: 89, base: 91, tag: "咖啡文化 艺术 体育 宜居", flag: "🇦🇺" },
+          { id: 88, name: "奥克兰", country: "新西兰", cli: 80, health: 86, base: 88, tag: "纯净 自然 户外 稳定", flag: "🇳🇿" },
+          { id: 89, name: "布里斯班", country: "澳大利亚", cli: 75, health: 85, base: 86, tag: "悠闲 阳光 昆士兰 性价比", flag: "🇦🇺" },
+          { id: 90, name: "珀斯", country: "澳大利亚", cli: 70, health: 86, base: 87, tag: "西澳 绝美海滩 矿业 宜居", flag: "🇦🇺" },
+          { id: 91, name: "阿德莱德", country: "澳大利亚", cli: 68, health: 88, base: 88, tag: "节庆 葡萄酒 慢节奏", flag: "🇦🇺" },
+          { id: 92, name: "黄金海岸", country: "澳大利亚", cli: 72, health: 84, base: 85, tag: "旅游 冲浪 阳光 乐园", flag: "🇦🇺" },
+          { id: 93, name: "惠灵顿", country: "新西兰", cli: 78, health: 88, base: 89, tag: "风城 文化 纯净 紧凑", flag: "🇳🇿" },
+          { id: 94, name: "基督城", country: "新西兰", cli: 70, health: 85, base: 84, tag: "花园之城 复兴 宁静", flag: "🇳🇿" },
+          { id: 95, name: "堪培拉", country: "澳大利亚", cli: 80, health: 92, base: 88, tag: "政治中心 规划 森林 治安", flag: "🇦🇺" },
+          { id: 96, name: "开普敦", country: "南非", cli: 35, health: 68, base: 72, tag: "山海之间 美景 冒险 葡萄酒", flag: "🇿🇦" },
+          { id: 97, name: "迪拜", country: "阿联酋", cli: 75, health: 80, base: 78, tag: "未来感 奢华 免税 高端", flag: "🇦🇪" },
+          { id: 98, name: "马拉喀什", country: "摩洛哥", cli: 28, health: 50, base: 65, tag: "异域风情 多彩 历史 摩尔", flag: "🇲🇦" },
+          { id: 99, name: "阿布扎比", country: "阿联酋", cli: 72, health: 85, base: 80, tag: "高端 安全 艺术 稳定", flag: "🇦🇪" },
+          { id: 100, name: "特拉维夫", country: "以色列", cli: 92, health: 88, base: 82, tag: "科技 创业 海滩 不夜城", flag: "🇮🇱" },
+        ];
+
+        // 2. 货币汇率
+        const CURRENCIES = {
+            'USD': { symbol: '$', rate: 1 },
+            'EUR': { symbol: '€', rate: 0.92 },
+            'GBP': { symbol: '£', rate: 0.79 },
+            'JPY': { symbol: '¥', rate: 150.5 },
+            'CNY': { symbol: '¥', rate: 7.2 },
+            'AUD': { symbol: 'A$', rate: 1.53 },
+        };
+
+        // 3. 应用状态
+        let state = {
+            income: 0,
+            currency: 'USD',
+            searchTerm: '',
+            sortBy: 'hpScore', // 'hpScore' or 'ppScore'
+            isDarkMode: true
+        };
+
+        // 4. DOM 引用
+        const grid = document.getElementById('city-grid');
+        const incomeInput = document.getElementById('income-input');
+        const currencySelect = document.getElementById('currency-select');
+        const currencySymbol = document.getElementById('currency-symbol');
+        const searchInput = document.getElementById('search-input');
+        const sortHpBtn = document.getElementById('sort-hp');
+        const sortPpBtn = document.getElementById('sort-pp');
+        const themeToggle = document.getElementById('theme-toggle');
+        const noResults = document.getElementById('no-results');
+
+        // 5. 初始化
+        function init() {
+            render();
+            lucide.createIcons();
+
+            // 事件监听
+            incomeInput.addEventListener('input', (e) => {
+                state.income = Number(e.target.value);
+                render();
+            });
+
+            currencySelect.addEventListener('change', (e) => {
+                state.currency = e.target.value;
+                currencySymbol.textContent = CURRENCIES[state.currency].symbol;
+                render();
+            });
+
+            searchInput.addEventListener('input', (e) => {
+                state.searchTerm = e.target.value;
+                render();
+            });
+
+            sortHpBtn.addEventListener('click', () => {
+                state.sortBy = 'hpScore';
+                sortHpBtn.classList.add('btn-active');
+                sortHpBtn.classList.remove('text-gray-500');
+                sortPpBtn.classList.remove('btn-active');
+                sortPpBtn.classList.add('text-gray-500');
+                render();
+            });
+
+            sortPpBtn.addEventListener('click', () => {
+                state.sortBy = 'ppScore';
+                sortPpBtn.classList.add('btn-active');
+                sortPpBtn.classList.remove('text-gray-500');
+                sortHpBtn.classList.remove('btn-active');
+                sortHpBtn.classList.add('text-gray-500');
+                render();
+            });
+
+            themeToggle.addEventListener('click', () => {
+                state.isDarkMode = !state.isDarkMode;
+                document.body.classList.toggle('light-mode');
+                themeToggle.innerHTML = state.isDarkMode ? '🌙' : '☀️';
+            });
+        }
+
+        // 6. 渲染引擎
+        function render() {
+            const usdEquivalent = state.income / CURRENCIES[state.currency].rate;
+            
+            // 数据处理
+            const data = INITIAL_CITIES.map(city => {
+                const ppScore = state.income === 0 ? 0 : Math.round(100 * (100 / city.cli) * (usdEquivalent / 100000));
+                const hpScore = Math.round((city.base * 0.6) + (Math.min(100, ppScore * 0.5) * 0.2) + (city.health * 0.2));
+                return { ...city, ppScore, hpScore };
+            })
+            .filter(city => {
+                const search = state.searchTerm.toLowerCase();
+                return city.name.toLowerCase().includes(search) || 
+                       city.country.toLowerCase().includes(search) || 
+                       city.tag.toLowerCase().includes(search);
+            })
+            .sort((a, b) => b[state.sortBy] - a[state.sortBy]);
+
+            // 清空网格
+            grid.innerHTML = '';
+            
+            if (data.length === 0) {
+                noResults.classList.remove('hidden');
+            } else {
+                noResults.classList.add('hidden');
+                
+                data.forEach((city, index) => {
+                    const card = createCard(city, index);
+                    grid.appendChild(card);
+                });
+            }
+            
+            // 重新刷新图标
+            lucide.createIcons();
+        }
+
+        // 7. 创建卡片 HTML
+        function createCard(city, index) {
+            const div = document.createElement('div');
+            div.className = `group relative p-8 rounded-[45px] border glass transition-all duration-500 card-enter hover:scale-[1.02]`;
+            div.style.animationDelay = `${(index % 12) * 0.03}s`;
+
+            const ppGradient = city.ppScore > 100 ? 'progress-gradient-pp-high' : 'progress-gradient-pp';
+            const tags = city.tag.split(" ").slice(0, 2).map(t => `<span class="px-2.5 py-1 rounded-full text-[9px] font-black uppercase tracking-tighter bg-white/10 text-gray-400">#${t}</span>`).join('');
+
+            div.innerHTML = `
+                <div class="absolute top-8 right-8 text-7xl opacity-5 group-hover:opacity-10 group-hover:-rotate-12 transition-all pointer-events-none select-none">
+                    ${city.flag}
+                </div>
+                <div class="relative">
+                    <div class="flex flex-wrap gap-2 mb-6">
+                        ${tags}
+                    </div>
+                    <h3 class="text-2xl font-black mb-1 leading-tight">${city.name}</h3>
+                    <p class="text-indigo-500 text-xs font-bold uppercase tracking-[0.2em] mb-8">${city.country}</p>
+                    <div class="space-y-6">
+                        <div>
+                            <div class="flex justify-between text-[10px] font-black uppercase opacity-40 mb-2 tracking-widest">
+                                <span>Purchasing Power</span>
+                                <span class="${city.ppScore > 100 ? 'text-emerald-500' : ''}">${city.ppScore}%</span>
+                            </div>
+                            <div class="h-1 w-full rounded-full bg-white/5">
+                                <div class="h-full rounded-full ${ppGradient}" style="width: ${Math.min(100, city.ppScore)}%; transition: width 1s ease-out"></div>
+                            </div>
+                        </div>
+                        <div>
+                            <div class="flex justify-between text-[10px] font-black uppercase opacity-40 mb-2 tracking-widest">
+                                <span>Happiness Index</span>
+                                <span class="text-emerald-500">${city.hpScore}/100</span>
+                            </div>
+                            <div class="h-1 w-full rounded-full bg-white/5">
+                                <div class="h-full rounded-full progress-gradient-hp" style="width: ${city.hpScore}%; transition: width 1s ease-out"></div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="mt-8 pt-6 border-t border-white/5 flex items-center justify-between">
+                        <div class="flex gap-4">
+                            <div class="text-center">
+                                <p class="text-[8px] font-black opacity-30 uppercase">Health</p>
+                                <p class="text-xs font-bold">${city.health}</p>
+                            </div>
+                            <div class="text-center">
+                                <p class="text-[8px] font-black opacity-30 uppercase">CLI Index</p>
+                                <p class="text-xs font-bold">${city.cli}</p>
+                            </div>
+                        </div>
+                        <div class="p-2 rounded-2xl bg-white/5 transition-colors">
+                            <i data-lucide="navigation-2" size="16" class="text-indigo-500"></i>
+                        </div>
+                    </div>
+                </div>
+            `;
+            return div;
+        }
+
+        // 启动应用
+        window.onload = init;
+    </script>
+</body>
+</html>
