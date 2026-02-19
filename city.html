@@ -218,75 +218,15 @@
 
     <script>
         // 核心城市数据库
-        window.CITIES = [
-            {
-                code: "tokyo",
-                name: "东京",
-                country: "日本",
-                population: 37400000,
-                area: 2194,
-                density: 17000,
-                life: 84,
-                cli: 68,
-                income: 4200,
-                rentRatio: 32,
-                food: 70,
-                health: 92,
-                aqi: 35,
-                green: 40,
-                walk: 88,
-                crime: 25,
-                stress: 60,
-                unemployment: 4,
-                diversity: 75,
-                commute: 45,
-                climate: 78,
-                nightlife: 90,
-                education: 88,
-                entertainment: 92,
-                happiness: 87,
-                tags: "金融中心,极致便利,动漫文化,治安极佳"
-            },
-            {
-                code: "chiang-mai",
-                name: "清迈",
-                country: "泰国",
-                population: 1200000,
-                area: 40,
-                density: 3000,
-                life: 76,
-                cli: 26,
-                income: 800,
-                rentRatio: 20,
-                food: 30,
-                health: 72,
-                aqi: 65,
-                green: 60,
-                walk: 65,
-                crime: 15,
-                stress: 30,
-                unemployment: 2,
-                diversity: 85,
-                commute: 20,
-                climate: 82,
-                nightlife: 60,
-                education: 68,
-                entertainment: 75,
-                happiness: 78,
-                tags: "数字游民,慢生活,性价比,佛教文化"
-            }
-        ];
+        
+        <script src="data.js"></script>
+
 
         function renderPage() {
             const params = new URLSearchParams(window.location.search);
             // 如果 URL 里没写 ?code=xxx，默认显示第一个城市 (东京)
-            let code = params.get('code');
-            if (!code) {
-                console.log("No city code in URL, defaulting to 'tokyo'");
-                code = 'tokyo';
-            }
-
-            const city = window.CITIES.find(c => c.code.toLowerCase() === code.toLowerCase());
+            const id = Number(params.get('id'));
+const city = window.CITIES.find(c => c.id === id);
 
             if (!city) {
                 document.getElementById('error-state').classList.remove('hidden');
