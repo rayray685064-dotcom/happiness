@@ -1,0 +1,402 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>城市幸福指数详情 - Global Freedom Index</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Lucide Icons CDN -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700;900&display=swap');
+        
+        :root {
+            --bg-color: #050505;
+            --card-bg: rgba(255, 255, 255, 0.03);
+            --border-color: rgba(255, 255, 255, 0.1);
+            --accent-color: #6366f1;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: var(--bg-color);
+            color: #ffffff;
+            margin: 0;
+            min-height: 100vh;
+        }
+
+        .glass-card {
+            background: var(--card-bg);
+            backdrop-filter: blur(12px);
+            border: 1px solid var(--border-color);
+            border-radius: 24px;
+        }
+
+        .progress-bar-bg {
+            background: rgba(255, 255, 255, 0.05);
+            height: 6px;
+            border-radius: 10px;
+            overflow: hidden;
+        }
+
+        .progress-fill {
+            height: 100%;
+            border-radius: 10px;
+            transition: width 1.5s cubic-bezier(0.1, 0, 0, 1);
+        }
+
+        /* 环形评分样式 */
+        .score-ring {
+            position: relative;
+            width: 140px;
+            height: 140px;
+        }
+
+        .score-ring svg {
+            transform: rotate(-90deg);
+        }
+
+        .score-ring circle {
+            fill: none;
+            stroke-width: 10;
+            stroke-linecap: round;
+        }
+
+        .score-ring .bg {
+            stroke: rgba(255, 255, 255, 0.05);
+        }
+
+        .score-ring .val {
+            stroke: var(--accent-color);
+            stroke-dasharray: 408; /* 2 * PI * 65 */
+            stroke-dashoffset: 408;
+            transition: stroke-dashoffset 1.5s ease-out;
+        }
+
+        /* 动画 */
+        .fade-in {
+            animation: fadeIn 0.8s ease forwards;
+            opacity: 0;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(15px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+    </style>
+</head>
+<body class="p-4 md:p-8 lg:p-12">
+    <!-- 背景装饰 -->
+    <div class="fixed inset-0 overflow-hidden pointer-events-none">
+        <div class="absolute -top-[10%] -left-[10%] w-[40%] h-[40%] rounded-full blur-[120px] opacity-10 bg-indigo-600"></div>
+        <div class="absolute bottom-[10%] -right-[10%] w-[40%] h-[40%] rounded-full blur-[120px] opacity-10 bg-emerald-500"></div>
+    </div>
+
+    <div id="app" class="max-w-6xl mx-auto hidden relative z-10">
+        <!-- Header & Top Actions -->
+        <header class="flex flex-col md:flex-row justify-between items-start md:items-center gap-6 mb-12 fade-in" style="animation-delay: 0.1s;">
+            <div>
+                <a href="index.html" class="inline-flex items-center gap-2 text-sm text-gray-500 hover:text-indigo-400 transition-colors mb-4">
+                    <i data-lucide="arrow-left" size="16"></i> 返回概览
+                </a>
+                <div class="flex items-end gap-4">
+                    <h1 id="city-name" class="text-5xl md:text-7xl font-black tracking-tighter">--</h1>
+                    <span id="country-name" class="text-xl md:text-2xl font-bold text-indigo-500 opacity-80 mb-2 underline decoration-indigo-500/30 underline-offset-8">--</span>
+                </div>
+                <div id="city-tags" class="flex flex-wrap gap-2 mt-4">
+                    <!-- Tags will be injected here -->
+                </div>
+            </div>
+
+            <!-- 综合评分 -->
+            <div class="glass-card p-6 flex items-center gap-6 pr-10">
+                <div class="score-ring">
+                    <svg width="140" height="140">
+                        <circle class="bg" cx="70" cy="70" r="65"></circle>
+                        <circle id="score-circle" class="val" cx="70" cy="70" r="65"></circle>
+                    </svg>
+                    <div class="absolute inset-0 flex flex-col items-center justify-center">
+                        <span id="happiness-score" class="text-4xl font-black">0</span>
+                        <span class="text-[10px] uppercase tracking-widest opacity-40 font-bold">Happiness</span>
+                    </div>
+                </div>
+                <div class="hidden sm:block">
+                    <p class="text-sm font-bold opacity-40 uppercase tracking-widest mb-1">综合幸福指数</p>
+                    <p class="text-xs text-gray-400 max-w-[120px]">基于购买力、环境、安全和医疗的加权评估。</p>
+                </div>
+            </div>
+        </header>
+
+        <!-- Main Content Grid -->
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-12 fade-in" style="animation-delay: 0.2s;">
+            <!-- Basic Stats Cards -->
+            <div class="glass-card p-6">
+                <p class="text-[10px] font-black opacity-30 uppercase tracking-[0.2em] mb-4">Population</p>
+                <div class="flex items-center gap-3">
+                    <i data-lucide="users" class="text-indigo-400"></i>
+                    <span id="pop-val" class="text-2xl font-bold tracking-tight">--</span>
+                </div>
+            </div>
+            <div class="glass-card p-6">
+                <p class="text-[10px] font-black opacity-30 uppercase tracking-[0.2em] mb-4">Area</p>
+                <div class="flex items-center gap-3">
+                    <i data-lucide="maximize" class="text-emerald-400"></i>
+                    <span id="area-val" class="text-2xl font-bold tracking-tight">--</span>
+                </div>
+            </div>
+            <div class="glass-card p-6">
+                <p class="text-[10px] font-black opacity-30 uppercase tracking-[0.2em] mb-4">Density</p>
+                <div class="flex items-center gap-3">
+                    <i data-lucide="layers" class="text-orange-400"></i>
+                    <span id="density-val" class="text-2xl font-bold tracking-tight">--</span>
+                </div>
+            </div>
+            <div class="glass-card p-6">
+                <p class="text-[10px] font-black opacity-30 uppercase tracking-[0.2em] mb-4">Life Expectancy</p>
+                <div class="flex items-center gap-3">
+                    <i data-lucide="heart-pulse" class="text-rose-400"></i>
+                    <span id="life-val" class="text-2xl font-bold tracking-tight">--</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-12">
+            <!-- Living Costs Section -->
+            <section class="glass-card p-8 fade-in" style="animation-delay: 0.3s;">
+                <div class="flex items-center gap-3 mb-8">
+                    <div class="p-2 rounded-xl bg-indigo-500/10 text-indigo-400"><i data-lucide="dollar-sign"></i></div>
+                    <h2 class="text-xl font-bold">生活成本分析</h2>
+                </div>
+                <div id="cost-bars" class="space-y-6">
+                    <!-- Progress bars injected here -->
+                </div>
+            </section>
+
+            <!-- Health & Environment Section -->
+            <section class="glass-card p-8 fade-in" style="animation-delay: 0.4s;">
+                <div class="flex items-center gap-3 mb-8">
+                    <div class="p-2 rounded-xl bg-emerald-500/10 text-emerald-400"><i data-lucide="leaf"></i></div>
+                    <h2 class="text-xl font-bold">健康与环境</h2>
+                </div>
+                <div id="health-bars" class="space-y-6">
+                    <!-- Progress bars injected here -->
+                </div>
+            </section>
+
+            <!-- Social Safety Section -->
+            <section class="glass-card p-8 fade-in" style="animation-delay: 0.5s;">
+                <div class="flex items-center gap-3 mb-8">
+                    <div class="p-2 rounded-xl bg-amber-500/10 text-amber-400"><i data-lucide="shield-check"></i></div>
+                    <h2 class="text-xl font-bold">社会安全度</h2>
+                </div>
+                <div id="safety-bars" class="space-y-6">
+                    <!-- Progress bars injected here -->
+                </div>
+            </section>
+
+            <!-- Life Experience Section -->
+            <section class="glass-card p-8 fade-in" style="animation-delay: 0.6s;">
+                <div class="flex items-center gap-3 mb-8">
+                    <div class="p-2 rounded-xl bg-rose-500/10 text-rose-400"><i data-lucide="sparkles"></i></div>
+                    <h2 class="text-xl font-bold">综合生活体验</h2>
+                </div>
+                <div id="experience-bars" class="space-y-6">
+                    <!-- Progress bars injected here -->
+                </div>
+            </section>
+        </div>
+    </div>
+
+    <!-- Error State -->
+    <div id="error-state" class="hidden fixed inset-0 flex flex-col items-center justify-center text-center p-6">
+        <i data-lucide="alert-circle" size="64" class="text-gray-700 mb-6"></i>
+        <h2 class="text-3xl font-black mb-2">City Not Found</h2>
+        <p class="text-gray-500 mb-8 max-w-sm">无法找到该城市的详细数据模型，请检查 URL 代码或返回首页搜索。</p>
+        <a href="index.html" class="px-8 py-3 bg-indigo-600 rounded-2xl font-bold hover:bg-indigo-700 transition-colors">返回首页</a>
+    </div>
+
+    <script>
+        // 核心城市数据库
+        window.CITIES = [
+            {
+                code: "tokyo",
+                name: "东京",
+                country: "日本",
+                population: 37400000,
+                area: 2194,
+                density: 17000,
+                life: 84,
+                cli: 68,
+                income: 4200,
+                rentRatio: 32,
+                food: 70,
+                health: 92,
+                aqi: 35,
+                green: 40,
+                walk: 88,
+                crime: 25,
+                stress: 60,
+                unemployment: 4,
+                diversity: 75,
+                commute: 45,
+                climate: 78,
+                nightlife: 90,
+                education: 88,
+                entertainment: 92,
+                happiness: 87,
+                tags: "金融中心,极致便利,动漫文化,治安极佳"
+            },
+            {
+                code: "chiang-mai",
+                name: "清迈",
+                country: "泰国",
+                population: 1200000,
+                area: 40,
+                density: 3000,
+                life: 76,
+                cli: 26,
+                income: 800,
+                rentRatio: 20,
+                food: 30,
+                health: 72,
+                aqi: 65,
+                green: 60,
+                walk: 65,
+                crime: 15,
+                stress: 30,
+                unemployment: 2,
+                diversity: 85,
+                commute: 20,
+                climate: 82,
+                nightlife: 60,
+                education: 68,
+                entertainment: 75,
+                happiness: 78,
+                tags: "数字游民,慢生活,性价比,佛教文化"
+            }
+        ];
+
+        function renderPage() {
+            const params = new URLSearchParams(window.location.search);
+            // 如果 URL 里没写 ?code=xxx，默认显示第一个城市 (东京)
+            let code = params.get('code');
+            if (!code) {
+                console.log("No city code in URL, defaulting to 'tokyo'");
+                code = 'tokyo';
+            }
+
+            const city = window.CITIES.find(c => c.code.toLowerCase() === code.toLowerCase());
+
+            if (!city) {
+                document.getElementById('error-state').classList.remove('hidden');
+                lucide.createIcons();
+                return;
+            }
+
+            document.getElementById('app').classList.remove('hidden');
+
+            // 1. 基础信息
+            document.getElementById('city-name').textContent = city.name;
+            document.getElementById('country-name').textContent = city.country;
+            const tagsContainer = document.getElementById('city-tags');
+            tagsContainer.innerHTML = '';
+            city.tags.split(',').forEach(tag => {
+                const span = document.createElement('span');
+                span.className = "px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest bg-white/10 text-gray-400 border border-white/5";
+                span.textContent = `#${tag.trim()}`;
+                tagsContainer.appendChild(span);
+            });
+
+            // 评分环
+            const scoreEl = document.getElementById('happiness-score');
+            const circle = document.getElementById('score-circle');
+            const circumference = 2 * Math.PI * 65;
+            const offset = circumference - (city.happiness / 100) * circumference;
+            
+            setTimeout(() => {
+                circle.style.strokeDashoffset = offset;
+                animateNumber(scoreEl, 0, city.happiness, 1500);
+            }, 500);
+
+            // 基础统计
+            document.getElementById('pop-val').textContent = formatLargeNumber(city.population);
+            document.getElementById('area-val').textContent = `${city.area.toLocaleString()} km²`;
+            document.getElementById('density-val').textContent = `${city.density.toLocaleString()}/km²`;
+            document.getElementById('life-val').textContent = `${city.life} Yrs`;
+
+            // 进度条组
+            renderProgressBars('cost-bars', [
+                { label: '收入中位数 (USD)', val: city.income, max: 8000, color: 'bg-indigo-500', isCurrency: true },
+                { label: '房租收入比', val: city.rentRatio, max: 100, color: 'bg-violet-500', suffix: '%' },
+                { label: '餐饮价格指数', val: city.food, max: 150, color: 'bg-blue-500' },
+                { label: '综合生活成本 CLI', val: city.cli, max: 150, color: 'bg-cyan-500' }
+            ]);
+
+            renderProgressBars('health-bars', [
+                { label: '医疗可及性', val: city.health, max: 100, color: 'bg-emerald-500' },
+                { label: '空气质量 (100-AQI)', val: 100 - city.aqi, max: 100, color: 'bg-teal-500' },
+                { label: '绿地覆盖率', val: city.green, max: 100, color: 'bg-green-500' },
+                { label: '步行友好度', val: city.walk, max: 100, color: 'bg-lime-500' }
+            ]);
+
+            renderProgressBars('safety-bars', [
+                { label: '治安安全指数', val: 100 - city.crime, max: 100, color: 'bg-amber-500' },
+                { label: '社会压力指数', val: city.stress, max: 100, color: 'bg-orange-500' },
+                { label: '失业率', val: city.unemployment, max: 20, color: 'bg-red-500' },
+                { label: '多元文化包容度', val: city.diversity, max: 100, color: 'bg-yellow-500' }
+            ]);
+
+            renderProgressBars('experience-bars', [
+                { label: '通勤时间 (分钟)', val: city.commute, max: 90, color: 'bg-rose-500' },
+                { label: '气候舒适度', val: city.climate, max: 100, color: 'bg-pink-500' },
+                { label: '夜生活丰富度', val: city.nightlife, max: 100, color: 'bg-fuchsia-500' },
+                { label: '教育质量', val: city.education, max: 100, color: 'bg-purple-500' }
+            ]);
+
+            lucide.createIcons();
+        }
+
+        function renderProgressBars(containerId, items) {
+            const container = document.getElementById(containerId);
+            container.innerHTML = '';
+            items.forEach(item => {
+                const percentage = Math.min(100, (item.val / item.max) * 100);
+                const wrapper = document.createElement('div');
+                wrapper.innerHTML = `
+                    <div class="flex justify-between items-center mb-2">
+                        <span class="text-[11px] font-bold uppercase opacity-40 tracking-wider">${item.label}</span>
+                        <span class="text-xs font-black">${item.isCurrency ? '$' : ''}${item.val}${item.suffix || ''}</span>
+                    </div>
+                    <div class="progress-bar-bg">
+                        <div class="progress-fill ${item.color}" style="width: 0%"></div>
+                    </div>
+                `;
+                container.appendChild(wrapper);
+                setTimeout(() => {
+                    wrapper.querySelector('.progress-fill').style.width = percentage + '%';
+                }, 100);
+            });
+        }
+
+        function animateNumber(element, start, end, duration) {
+            let startTimestamp = null;
+            const step = (timestamp) => {
+                if (!startTimestamp) startTimestamp = timestamp;
+                const progress = Math.min((timestamp - startTimestamp) / duration, 1);
+                element.innerHTML = Math.floor(progress * (end - start) + start);
+                if (progress < 1) window.requestAnimationFrame(step);
+            };
+            window.requestAnimationFrame(step);
+        }
+
+        function formatLargeNumber(num) {
+            if (num >= 1000000) return (num / 1000000).toFixed(1) + 'M';
+            if (num >= 1000) return (num / 1000).toFixed(1) + 'K';
+            return num;
+        }
+
+        window.onload = renderPage;
+    </script>
+</body>
+</html>
