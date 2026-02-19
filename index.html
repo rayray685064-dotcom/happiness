@@ -241,7 +241,7 @@
             const usdEquivalent = state.income / CURRENCIES[state.currency].rate;
             
             // 数据处理
-            const data = INITIAL_CITIES.map(city => {
+            const data = window.CITIES.map(city => {
                 const ppScore = state.income === 0 ? 0 : Math.round(100 * (100 / city.cli) * (usdEquivalent / 100000));
                 const hpScore = Math.round((city.base * 0.6) + (Math.min(100, ppScore * 0.5) * 0.2) + (city.health * 0.2));
                 return { ...city, ppScore, hpScore };
