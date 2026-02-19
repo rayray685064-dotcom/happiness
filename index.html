@@ -276,6 +276,10 @@
         function createCard(city, index) {
             const div = document.createElement('div');
             div.className = `group relative p-8 rounded-[45px] border glass transition-all duration-500 card-enter hover:scale-[1.02]`;
+            div.style.cursor = "pointer";
+div.onclick = () => {
+    window.location.href = `city.html?name=${encodeURIComponent(city.name)}`;
+};
             div.style.animationDelay = `${(index % 12) * 0.03}s`;
 
             const ppGradient = city.ppScore > 100 ? 'progress-gradient-pp-high' : 'progress-gradient-pp';
