@@ -221,14 +221,14 @@
     <script>
         // 核心城市数据库
         
-    <script src="data.js"></script>    
+   <script src="/happiness/data.js"></script>  
 
 
         function renderPage() {
             const params = new URLSearchParams(window.location.search);
             // 如果 URL 里没写 ?code=xxx，默认显示第一个城市 (东京)
-            const id = Number(params.get('id'));
-const city = window.CITIES.find(c => c.id === id);
+            const id = Number(params.get('id')) || 1; // 默认城市ID = 1
+const city = window.CITIES?.find(c => c.id === id);
 
             if (!city) {
                 document.getElementById('error-state').classList.remove('hidden');
