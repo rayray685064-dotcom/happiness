@@ -2,84 +2,72 @@
 <html lang="zh-CN">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>城市详情 - Global Freedom Index</title>
+    <title>城市详情报告</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/lucide@latest"></script>
     <script src="data.js"></script>
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700;900&display=swap');
-        body { font-family: 'Inter', sans-serif; background-color: #050505; color: #ffffff; }
-        .glass-card { background: rgba(255, 255, 255, 0.03); backdrop-filter: blur(12px); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 24px; }
+        body { background-color: #050505; color: white; font-family: sans-serif; }
+        .detail-card { background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.1); }
     </style>
 </head>
 <body class="p-6 md:p-12">
     <div class="max-w-4xl mx-auto">
-        <button onclick="history.back()" class="mb-8 flex items-center gap-2 opacity-50 hover:opacity-100 transition-opacity">
-            <i data-lucide="arrow-left"></i> 返回列表
+        <button onclick="window.location.href='index.html'" class="mb-8 flex items-center gap-2 opacity-50 hover:opacity-100 transition-opacity">
+            <i data-lucide="arrow-left"></i> 返回全球列表
         </button>
 
-        <div id="city-detail-content">
+        <div id="content">
             </div>
     </div>
 
     <script>
-        function renderPage() {
-            // 2. 从 URL 获取 ID
-            const urlParams = new URLSearchParams(window.location.search);
-            const cityId = parseInt(urlParams.get('id'));
-
-            // 3. 查找对应数据
-            const city = window.CITIES.find(c => c.id === cityId);
+        function render() {
+            const params = new URLSearchParams(window.location.search);
+            const id = parseInt(params.get('id'));
+            const city = window.CITIES.find(c => c.id === id);
 
             if (!city) {
-                document.getElementById('city-detail-content').innerHTML = "<h1>未找到该城市</h1>";
+                document.getElementById('content').innerHTML = "<h1>未找到城市数据</h1>";
                 return;
             }
 
-            // 4. 渲染页面内容
-            const container = document.getElementById('city-detail-content');
-            container.innerHTML = `
-                <div class="glass-card p-8 md:p-12">
-                    <div class="flex items-center gap-6 mb-8">
-                        <span class="text-7xl">${city.flag}</span>
+            document.getElementById('content').innerHTML = `
+                <div class="detail-card p-8 md:p-12 rounded-[40px]">
+                    <div class="flex items-center gap-6 mb-12">
+                        <span class="text-8xl">${city.flag}</span>
                         <div>
-                            <h1 class="text-5xl font-black italic tracking-tighter">${city.name}</h1>
-                            <p class="text-xl opacity-40 uppercase font-bold tracking-widest">${city.country}</p>
+                            <h1 class="text-6xl font-black italic italic tracking-tighter">${city.name}</h1>
+                            <p class="text-2xl opacity-40 uppercase font-bold">${city.country}</p>
                         </div>
                     </div>
 
-                    <div class="grid grid-cols-1 md:grid-cols-3 gap-8 mt-12">
-                        <div class="p-6 rounded-2xl bg-white/5 text-center">
-                            <p class="text-[10px] opacity-40 font-black uppercase mb-2">生活成本指数 (CLI)</p>
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+                        <div class="p-6 rounded-3xl bg-white/5 border border-white/5">
+                            <p class="text-[10px] opacity-40 font-bold mb-2 uppercase">生活成本 (CLI)</p>
                             <p class="text-4xl font-bold text-indigo-400">${city.cli}</p>
                         </div>
-                        <div class="p-6 rounded-2xl bg-white/5 text-center">
-                            <p class="text-[10px] opacity-40 font-black uppercase mb-2">医疗健康指数</p>
+                        <div class="p-6 rounded-3xl bg-white/5 border border-white/5">
+                            <p class="text-[10px] opacity-40 font-bold mb-2 uppercase">医疗质量</p>
                             <p class="text-4xl font-bold text-emerald-400">${city.health}</p>
                         </div>
-                        <div class="p-6 rounded-2xl bg-white/5 text-center">
-                            <p class="text-[10px] opacity-40 font-black uppercase mb-2">基础生活分</p>
+                        <div class="p-6 rounded-3xl bg-white/5 border border-white/5">
+                            <p class="text-[10px] opacity-40 font-bold mb-2 uppercase">宜居基准分</p>
                             <p class="text-4xl font-bold text-purple-400">${city.base}</p>
                         </div>
                     </div>
 
                     <div class="mt-12">
-                        <h4 class="text-[10px] opacity-40 font-black uppercase mb-4 tracking-widest">城市特色标签</h4>
+                        <p class="text-[10px] opacity-40 font-bold mb-4 uppercase">深度标签</p>
                         <div class="flex gap-3 flex-wrap">
-                            ${city.tag.split(' ').map(tag => `
-                                <span class="px-4 py-2 rounded-xl bg-indigo-500/10 border border-indigo-500/20 text-indigo-400 text-xs font-bold">
-                                    # ${tag}
-                                </span>
-                            `).join('')}
+                            ${city.tag.split(' ').map(t => `<span class="px-4 py-2 rounded-xl bg-white/5 border border-white/10 text-sm"># ${t}</span>`).join('')}
                         </div>
                     </div>
                 </div>
             `;
             lucide.createIcons();
         }
-
-        window.onload = renderPage;
+        window.onload = render;
     </script>
 </body>
 </html>
