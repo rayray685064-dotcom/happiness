@@ -4,340 +4,77 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Global Freedom Index - 全球退休/旅居幸福度分析仪</title>
-    <!-- Tailwind CSS CDN -->
     <script src="https://cdn.tailwindcss.com"></script>
-    <!-- Lucide Icons CDN -->
     <script src="https://unpkg.com/lucide@latest"></script>
+    <script src="data.js"></script>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700;900&display=swap');
-        
-        :root {
-            --bg-color: #050505;
-            --text-color: #ffffff;
-            --glass-bg: rgba(255, 255, 255, 0.03);
-            --glass-border: rgba(255, 255, 255, 0.1);
-        }
-
-        .light-mode {
-            --bg-color: #f8fafc;
-            --text-color: #0f172a;
-            --glass-bg: #ffffff;
-            --glass-border: #e2e8f0;
-        }
-
-        body {
-            font-family: 'Inter', sans-serif;
-            background-color: var(--bg-color);
-            color: var(--text-color);
-            transition: background-color 0.5s ease, color 0.5s ease;
-            margin: 0;
-            min-height: 100vh;
-        }
-
-        .glass {
-            background: var(--glass-bg);
-            backdrop-filter: blur(14px);
-            -webkit-backdrop-filter: blur(14px);
-            border: 1px solid var(--glass-border);
-        }
-
-        .progress-gradient-pp { background: linear-gradient(90deg, #6366f1, #a855f7); }
-        .progress-gradient-hp { background: linear-gradient(90deg, #10b981, #3b82f6); }
-        .progress-gradient-pp-high { background: linear-gradient(90deg, #059669, #34d399); }
-
-        /* 隐藏数字输入框箭头 */
-        input::-webkit-outer-spin-button,
-        input::-webkit-inner-spin-button {
-            -webkit-appearance: none;
-            margin: 0;
-        }
-
-        .card-enter {
-            animation: fadeInUp 0.5s ease forwards;
-            opacity: 0;
-        }
-
-        @keyframes fadeInUp {
-            from { opacity: 0; transform: translateY(20px); }
-            to { opacity: 1; transform: translateY(0); }
-        }
-
-        /* 选中的按钮样式 */
-        .btn-active {
-            background-color: #4f46e5;
-            color: white !important;
-        }
+        :root { --bg-color: #050505; --text-color: #ffffff; }
+        body { font-family: 'Inter', sans-serif; background-color: var(--bg-color); color: var(--text-color); }
+        .glass-card { background: rgba(255, 255, 255, 0.03); border: 1px solid rgba(255, 255, 255, 0.1); backdrop-filter: blur(12px); cursor: pointer; transition: all 0.3s ease; }
+        .glass-card:hover { transform: translateY(-5px); border-color: rgba(99, 102, 241, 0.4); }
+        .progress-gradient-hp { background: linear-gradient(90deg, #6366f1, #a855f7); }
     </style>
 </head>
-<body class="dark-mode">
-    <!-- 背景装饰 -->
-    <div class="fixed inset-0 overflow-hidden pointer-events-none">
-        <div class="absolute -top-[10%] -left-[10%] w-[50%] h-[50%] rounded-full blur-[140px] opacity-20 bg-indigo-600"></div>
-        <div class="absolute top-[50%] -right-[10%] w-[40%] h-[60%] rounded-full blur-[140px] opacity-10 bg-emerald-500"></div>
-    </div>
-
-    <div class="max-w-7xl mx-auto relative z-10 p-4 md:p-12">
-        <!-- 导航与控制 -->
-        <header class="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-10 mb-16">
-            <div class="space-y-2">
-                <div class="flex items-center gap-2 text-indigo-500 font-bold">
-                    <i data-lucide="globe" size="18"></i>
-                    <span class="uppercase text-[10px] tracking-[0.4em]">Global Intelligence Platform</span>
-                </div>
-                <h1 class="text-5xl md:text-7xl font-black tracking-tighter">
-                    World <span class="text-indigo-500">Scale</span>
-                </h1>
-                <p class="opacity-40 text-sm font-medium">已集成 100 个全球目的地实时数据模型</p>
-            </div>
-
-            <div class="glass w-full lg:w-auto p-6 rounded-[35px] border shadow-2xl transition-all">
-                <div class="flex flex-col md:flex-row items-center gap-6">
-                    <div class="flex flex-col">
-                        <span class="text-[10px] font-black uppercase text-gray-500 mb-2 tracking-widest">预算配置 / Budget</span>
-                        <div class="flex items-center gap-4">
-                            <div class="relative">
-                                <select id="currency-select" class="appearance-none bg-transparent pl-2 pr-8 py-1 text-xl font-bold border-b-2 border-indigo-500/40 outline-none cursor-pointer">
-                                    <option value="USD">USD</option>
-                                    <option value="EUR">EUR</option>
-                                    <option value="GBP">GBP</option>
-                                    <option value="JPY">JPY</option>
-                                    <option value="CNY">CNY</option>
-                                    <option value="AUD">AUD</option>
-                                </select>
-                                <i data-lucide="chevron-down" class="absolute right-2 top-1/2 -translate-y-1/2 opacity-30 pointer-events-none w-4 h-4"></i>
-                            </div>
-                            <div class="flex items-center gap-2">
-                                <span id="currency-symbol" class="text-3xl font-light opacity-20">$</span>
-                                <input id="income-input" type="number" placeholder="输入金额" class="bg-transparent text-4xl font-bold outline-none w-48 border-b-2 border-white/5 focus:border-indigo-500/50 transition-all">
-                            </div>
-                        </div>
-                    </div>
-                    <button id="theme-toggle" class="w-14 h-14 rounded-full flex items-center justify-center bg-white/10 hover:bg-white/20 transition-all text-2xl">
-                        🌙
-                    </button>
-                </div>
-            </div>
+<body class="p-8">
+    <div class="max-w-6xl mx-auto">
+        <header class="mb-12">
+            <h1 class="text-4xl font-black mb-2 italic tracking-tighter">GLOBAL FREEDOM INDEX</h1>
+            <p class="opacity-50 text-sm">探索全球最适合旅居与退休的城市数据</p>
         </header>
 
-        <!-- 搜索与排序控制 -->
-        <div class="flex flex-col md:flex-row gap-4 mb-12">
-            <div class="flex-1 flex items-center gap-4 px-8 py-5 rounded-[25px] border glass focus-within:border-indigo-500/50 transition-all">
-                <i data-lucide="search" class="text-gray-500" size="22"></i>
-                <input id="search-input" placeholder="搜索城市、国家、标签 (如: '数字游民', '低税', '医疗')..." class="bg-transparent outline-none w-full text-lg font-medium placeholder:opacity-20">
+        <div id="city-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             </div>
-
-            <div class="p-1.5 flex gap-1 rounded-[25px] border glass">
-                <button id="sort-hp" class="px-8 py-3 rounded-[18px] text-xs font-black uppercase tracking-widest transition-all btn-active">
-                    <div class="flex items-center gap-2"><i data-lucide="heart" size="14"></i> 幸福指数</div>
-                </button>
-                <button id="sort-pp" class="px-8 py-3 rounded-[18px] text-xs font-black uppercase tracking-widest transition-all text-gray-500">
-                    <div class="flex items-center gap-2"><i data-lucide="wallet" size="14"></i> 消费能力</div>
-                </button>
-            </div>
-        </div>
-
-        <!-- 城市网格 -->
-        <div id="city-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-            <!-- 动态生成卡片 -->
-        </div>
-
-        <div id="no-results" class="hidden text-center py-40 opacity-20 italic text-xl font-light">
-            没有找到匹配的城市，换个关键词试试？ (例如: "暖冬", "冲浪", "科技")
-        </div>
-
-        <footer class="mt-32 pb-12 border-t border-white/5 pt-12 flex flex-col md:flex-row justify-between items-center gap-6 opacity-30 text-[10px] font-bold uppercase tracking-[0.3em]">
-            <p>© 2024 Global Scale Index v2.5</p>
-            <div class="flex gap-8">
-                <span>数据源: Numbeo Global Database</span>
-                <span>覆盖城市: 100 全球节点</span>
-            </div>
-        </footer>
     </div>
 
-    <script src="data.js"></script>
-<script>
-    // 1. 城市数据库
-        
-
-        // 2. 货币汇率
-        const CURRENCIES = {
-            'USD': { symbol: '$', rate: 1 },
-            'EUR': { symbol: '€', rate: 0.92 },
-            'GBP': { symbol: '£', rate: 0.79 },
-            'JPY': { symbol: '¥', rate: 150.5 },
-            'CNY': { symbol: '¥', rate: 7.2 },
-            'AUD': { symbol: 'A$', rate: 1.53 },
-        };
-
-        // 3. 应用状态
-        let state = {
-            income: 0,
-            currency: 'USD',
-            searchTerm: '',
-            sortBy: 'hpScore', // 'hpScore' or 'ppScore'
-            isDarkMode: true
-        };
-
-        // 4. DOM 引用
-        const grid = document.getElementById('city-grid');
-        const incomeInput = document.getElementById('income-input');
-        const currencySelect = document.getElementById('currency-select');
-        const currencySymbol = document.getElementById('currency-symbol');
-        const searchInput = document.getElementById('search-input');
-        const sortHpBtn = document.getElementById('sort-hp');
-        const sortPpBtn = document.getElementById('sort-pp');
-        const themeToggle = document.getElementById('theme-toggle');
-        const noResults = document.getElementById('no-results');
-
-        // 5. 初始化
+    <script>
         function init() {
-            render();
-            lucide.createIcons();
-
-            // 事件监听
-            incomeInput.addEventListener('input', (e) => {
-                state.income = Number(e.target.value);
-                render();
+            const grid = document.getElementById('city-grid');
+            // 2. 使用 window.CITIES 数据
+            window.CITIES.forEach(city => {
+                const card = createCityCard(city);
+                grid.appendChild(card);
             });
-
-            currencySelect.addEventListener('change', (e) => {
-                state.currency = e.target.value;
-                currencySymbol.textContent = CURRENCIES[state.currency].symbol;
-                render();
-            });
-
-            searchInput.addEventListener('input', (e) => {
-                state.searchTerm = e.target.value;
-                render();
-            });
-
-            sortHpBtn.addEventListener('click', () => {
-                state.sortBy = 'hpScore';
-                sortHpBtn.classList.add('btn-active');
-                sortHpBtn.classList.remove('text-gray-500');
-                sortPpBtn.classList.remove('btn-active');
-                sortPpBtn.classList.add('text-gray-500');
-                render();
-            });
-
-            sortPpBtn.addEventListener('click', () => {
-                state.sortBy = 'ppScore';
-                sortPpBtn.classList.add('btn-active');
-                sortPpBtn.classList.remove('text-gray-500');
-                sortHpBtn.classList.remove('btn-active');
-                sortHpBtn.classList.add('text-gray-500');
-                render();
-            });
-
-            themeToggle.addEventListener('click', () => {
-                state.isDarkMode = !state.isDarkMode;
-                document.body.classList.toggle('light-mode');
-                themeToggle.innerHTML = state.isDarkMode ? '🌙' : '☀️';
-            });
-        }
-
-        // 6. 渲染引擎
-        function render() {
-            const usdEquivalent = state.income / CURRENCIES[state.currency].rate;
-            
-            // 数据处理
-            const data = window.CITIES.map(city => {
-                const ppScore = state.income === 0 ? 0 : Math.round(100 * (100 / city.cli) * (usdEquivalent / 100000));
-                const hpScore = Math.round((city.base * 0.6) + (Math.min(100, ppScore * 0.5) * 0.2) + (city.health * 0.2));
-                return { ...city, ppScore, hpScore };
-            })
-            .filter(city => {
-                const search = state.searchTerm.toLowerCase();
-                return city.name.toLowerCase().includes(search) || 
-                       city.country.toLowerCase().includes(search) || 
-                       city.tag.toLowerCase().includes(search);
-            })
-            .sort((a, b) => b[state.sortBy] - a[state.sortBy]);
-
-            // 清空网格
-            grid.innerHTML = '';
-            
-            if (data.length === 0) {
-                noResults.classList.remove('hidden');
-            } else {
-                noResults.classList.add('hidden');
-                
-                data.forEach((city, index) => {
-                    const card = createCard(city, index);
-                    grid.appendChild(card);
-                });
-            }
-            
-            // 重新刷新图标
             lucide.createIcons();
         }
 
-        // 7. 创建卡片 HTML
-        function createCard(city, index) {
+        function createCityCard(city) {
             const div = document.createElement('div');
-            div.className = `group relative p-8 rounded-[45px] border glass transition-all duration-500 card-enter hover:scale-[1.02]`;
-            div.style.cursor = "pointer";
-div.onclick = () => {
-    window.location.href = `city.html?name=${encodeURIComponent(city.name)}`;
-};
-            div.style.animationDelay = `${(index % 12) * 0.03}s`;
-
-            const ppGradient = city.ppScore > 100 ? 'progress-gradient-pp-high' : 'progress-gradient-pp';
-            const tags = city.tag.split(" ").slice(0, 2).map(t => `<span class="px-2.5 py-1 rounded-full text-[9px] font-black uppercase tracking-tighter bg-white/10 text-gray-400">#${t}</span>`).join('');
+            div.className = 'glass-card p-6 rounded-3xl';
+            // 3. 点击跳转到详情页，带上 id
+            div.onclick = () => { window.location.href = `city.html?id=${city.id}`; };
+            
+            // 计算一个模拟的 HP 分数用于展示
+            const hpScore = Math.floor((city.health + (100 - city.cli)) / 2);
 
             div.innerHTML = `
-                <div class="absolute top-8 right-8 text-7xl opacity-5 group-hover:opacity-10 group-hover:-rotate-12 transition-all pointer-events-none select-none">
-                    ${city.flag}
+                <div class="flex justify-between items-start mb-6">
+                    <div>
+                        <span class="text-3xl mb-2 block">${city.flag}</span>
+                        <h3 class="text-xl font-bold">${city.name}</h3>
+                        <p class="text-xs opacity-50">${city.country}</p>
+                    </div>
+                    <div class="bg-indigo-500/10 text-indigo-400 text-[10px] px-2 py-1 rounded-full font-bold">#${city.id}</div>
                 </div>
-                <div class="relative">
-                    <div class="flex flex-wrap gap-2 mb-6">
-                        ${tags}
-                    </div>
-                    <h3 class="text-2xl font-black mb-1 leading-tight">${city.name}</h3>
-                    <p class="text-indigo-500 text-xs font-bold uppercase tracking-[0.2em] mb-8">${city.country}</p>
-                    <div class="space-y-6">
-                        <div>
-                            <div class="flex justify-between text-[10px] font-black uppercase opacity-40 mb-2 tracking-widest">
-                                <span>Purchasing Power</span>
-                                <span class="${city.ppScore > 100 ? 'text-emerald-500' : ''}">${city.ppScore}%</span>
-                            </div>
-                            <div class="h-1 w-full rounded-full bg-white/5">
-                                <div class="h-full rounded-full ${ppGradient}" style="width: ${Math.min(100, city.ppScore)}%; transition: width 1s ease-out"></div>
-                            </div>
+                <div class="space-y-4">
+                    <div>
+                        <div class="flex justify-between text-[10px] font-bold mb-1 opacity-50 uppercase">
+                            <span>Freedom Score</span>
+                            <span>${hpScore}/100</span>
                         </div>
-                        <div>
-                            <div class="flex justify-between text-[10px] font-black uppercase opacity-40 mb-2 tracking-widest">
-                                <span>Happiness Index</span>
-                                <span class="text-emerald-500">${city.hpScore}/100</span>
-                            </div>
-                            <div class="h-1 w-full rounded-full bg-white/5">
-                                <div class="h-full rounded-full progress-gradient-hp" style="width: ${city.hpScore}%; transition: width 1s ease-out"></div>
-                            </div>
+                        <div class="h-1.5 w-full rounded-full bg-white/5">
+                            <div class="h-full rounded-full progress-gradient-hp" style="width: ${hpScore}%"></div>
                         </div>
                     </div>
-                    <div class="mt-8 pt-6 border-t border-white/5 flex items-center justify-between">
-                        <div class="flex gap-4">
-                            <div class="text-center">
-                                <p class="text-[8px] font-black opacity-30 uppercase">Health</p>
-                                <p class="text-xs font-bold">${city.health}</p>
-                            </div>
-                            <div class="text-center">
-                                <p class="text-[8px] font-black opacity-30 uppercase">CLI Index</p>
-                                <p class="text-xs font-bold">${city.cli}</p>
-                            </div>
-                        </div>
-                        <div class="p-2 rounded-2xl bg-white/5 transition-colors">
-                            <i data-lucide="navigation-2" size="16" class="text-indigo-500"></i>
-                        </div>
+                    <div class="flex gap-2 flex-wrap">
+                        ${city.tag.split(' ').map(t => `<span class="text-[9px] bg-white/5 px-2 py-1 rounded-md opacity-60">${t}</span>`).join('')}
                     </div>
                 </div>
             `;
             return div;
         }
 
-        // 启动应用
         window.onload = init;
     </script>
 </body>
 </html>
-fix cities loading
