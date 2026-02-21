@@ -3,14 +3,12 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Global Freedom Index - 全球退休/旅居幸福度分析仪</title>
+    <title>Global Freedom Index</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/lucide@latest"></script>
-    <script src="data.js"></script>
-    <style>
+    <script src="data.js"></script> <style>
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700;900&display=swap');
-        :root { --bg-color: #050505; --text-color: #ffffff; }
-        body { font-family: 'Inter', sans-serif; background-color: var(--bg-color); color: var(--text-color); }
+        body { font-family: 'Inter', sans-serif; background-color: #050505; color: white; }
         .glass-card { background: rgba(255, 255, 255, 0.03); border: 1px solid rgba(255, 255, 255, 0.1); backdrop-filter: blur(12px); cursor: pointer; transition: all 0.3s ease; }
         .glass-card:hover { transform: translateY(-5px); border-color: rgba(99, 102, 241, 0.4); }
         .progress-gradient-hp { background: linear-gradient(90deg, #6366f1, #a855f7); }
@@ -20,7 +18,7 @@
     <div class="max-w-6xl mx-auto">
         <header class="mb-12">
             <h1 class="text-4xl font-black mb-2 italic tracking-tighter">GLOBAL FREEDOM INDEX</h1>
-            <p class="opacity-50 text-sm">探索全球最适合旅居与退休的城市数据</p>
+            <p class="opacity-50 text-sm">点击城市查看详细生存报告</p>
         </header>
 
         <div id="city-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -30,50 +28,41 @@
     <script>
         function init() {
             const grid = document.getElementById('city-grid');
-            // 2. 使用 window.CITIES 数据
+            // 使用 window.CITIES 读取 data.js 里的全部数据
             window.CITIES.forEach(city => {
-                const card = createCityCard(city);
+                const card = document.createElement('div');
+                card.className = 'glass-card p-6 rounded-3xl';
+                
+                // 【核心跳转逻辑】
+                card.onclick = () => { window.location.href = `city.html?id=${city.id}`; };
+                
+                const hpScore = Math.floor((city.health + (100 - city.cli)) / 2);
+
+                card.innerHTML = `
+                    <div class="flex justify-between items-start mb-6">
+                        <div>
+                            <span class="text-3xl mb-2 block">${city.flag}</span>
+                            <h3 class="text-xl font-bold">${city.name}</h3>
+                            <p class="text-xs opacity-50">${city.country}</p>
+                        </div>
+                        <div class="bg-indigo-500/10 text-indigo-400 text-[10px] px-2 py-1 rounded-full font-bold">#${city.id}</div>
+                    </div>
+                    <div class="space-y-4">
+                        <div>
+                            <div class="flex justify-between text-[10px] font-bold mb-1 opacity-50 uppercase">
+                                <span>Freedom Score</span>
+                                <span>${hpScore}/100</span>
+                            </div>
+                            <div class="h-1.5 w-full rounded-full bg-white/5">
+                                <div class="h-full rounded-full progress-gradient-hp" style="width: ${hpScore}%"></div>
+                            </div>
+                        </div>
+                    </div>
+                `;
                 grid.appendChild(card);
             });
             lucide.createIcons();
         }
-
-        function createCityCard(city) {
-            const div = document.createElement('div');
-            div.className = 'glass-card p-6 rounded-3xl';
-            // 3. 点击跳转到详情页，带上 id
-            div.onclick = () => { window.location.href = `city.html?id=${city.id}`; };
-            
-            // 计算一个模拟的 HP 分数用于展示
-            const hpScore = Math.floor((city.health + (100 - city.cli)) / 2);
-
-            div.innerHTML = `
-                <div class="flex justify-between items-start mb-6">
-                    <div>
-                        <span class="text-3xl mb-2 block">${city.flag}</span>
-                        <h3 class="text-xl font-bold">${city.name}</h3>
-                        <p class="text-xs opacity-50">${city.country}</p>
-                    </div>
-                    <div class="bg-indigo-500/10 text-indigo-400 text-[10px] px-2 py-1 rounded-full font-bold">#${city.id}</div>
-                </div>
-                <div class="space-y-4">
-                    <div>
-                        <div class="flex justify-between text-[10px] font-bold mb-1 opacity-50 uppercase">
-                            <span>Freedom Score</span>
-                            <span>${hpScore}/100</span>
-                        </div>
-                        <div class="h-1.5 w-full rounded-full bg-white/5">
-                            <div class="h-full rounded-full progress-gradient-hp" style="width: ${hpScore}%"></div>
-                        </div>
-                    </div>
-                    <div class="flex gap-2 flex-wrap">
-                        ${city.tag.split(' ').map(t => `<span class="text-[9px] bg-white/5 px-2 py-1 rounded-md opacity-60">${t}</span>`).join('')}
-                    </div>
-                </div>
-            `;
-            return div;
-        }
-
         window.onload = init;
     </script>
 </body>
